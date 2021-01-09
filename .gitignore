@@ -1,0 +1,59 @@
+# project
+.DS_Store
+.vscode
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+timit_data/
+
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+ide_layouts/
+build/
+_build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+tests/tests_tt_dir/
+tests/save_dir
+tests/tests/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Rope project settings
+.ropeproject
+
+# mypy
+.mypy_cache/
