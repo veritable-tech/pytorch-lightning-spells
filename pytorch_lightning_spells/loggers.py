@@ -14,7 +14,8 @@ class ScreenLogger(LightningLoggerBase):
 
     @rank_zero_only
     def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:
-        print("")
+        if any((key.startswith("val_") for key in metrics.keys())):
+            print("")
         for key, val in metrics.items():
             if key.startswith("val_"):
                 print(key, "%.4f" % val)
