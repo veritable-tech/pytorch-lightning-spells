@@ -7,12 +7,14 @@ class ScreenLogger(LightningLoggerBase):
     """A logger that prints metrics to the screen.
 
     Suitable in situation where you want to check the training progress directly in the console.
-    """    
+    """
+
     def __init__(self):
         super().__init__(self)
 
     @rank_zero_only
     def log_metrics(self, metrics: Dict[str, float], step: Optional[int] = None) -> None:
+        print("")
         for key, val in metrics.items():
             if key.startswith("val_"):
                 print(key, "%.4f" % val)
