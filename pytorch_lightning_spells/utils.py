@@ -1,6 +1,10 @@
 import warnings
+from typing import Sequence, Union
 
 import torch
+import numpy as np
+
+Layer = Union[torch.nn.Module, torch.nn.ModuleList]
 
 
 class EMATracker:
@@ -33,3 +37,42 @@ class EMATracker:
     @property
     def value(self):
         return self._value
+
+
+def count_parameters(parameters):
+    return int(np.sum(list(p.numel() for p in parameters)))
+
+# -----------------------------------
+# Layer freezing from fast.ai v1
+# -----------------------------------
+
+
+def children(m):
+    return m if isinstance(m, (list, tuple)) else list(m.children())
+
+
+def set_trainable_attr(m, b):
+    m.trainable = b
+    for p in m.parameters():
+        p.requires_grad = b
+
+
+def apply_leaf(m, f):
+    c = children(m)
+    if isinstance(m, torch.nn.Module):
+        f(m)
+    if len(c) > 0:
+        for l in c:
+            apply_leaf(l, f)
+
+
+def set_trainable(layer: Layer, trainable: bool):
+    """Freeze or unfreeze all parameters in the layer."""
+    apply_leaf(layer, lambda m: set_trainable_attr(m, trainable))
+
+
+def freeze_layers(layer_groups: Sequence[Layer], freeze_flags: Sequence[bool]):
+    """Freeze or unfreeze groups of layers"""
+    assert len(freeze_flags) == len(layer_groups)
+    for layer, flag in zip(layer_groups, freeze_flags):
+        set_trainable(layer, not flag)
