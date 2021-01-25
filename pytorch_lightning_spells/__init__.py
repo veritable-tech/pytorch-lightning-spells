@@ -10,3 +10,4 @@ from . import losses
 from . import optimizers
 from . import utils
 from . import lr_schedulers
+from . import metrics
