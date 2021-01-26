@@ -17,7 +17,9 @@ class MixupSoftmaxLoss(nn.Module):
         self.weight = class_weights
 
     def forward(self, output, target):
-        weight = self.weight.to(output.device)
+        weight = self.weight
+        if weight is not None:
+            weight = self.weight.to(output.device)
         if len(target.size()) == 2:
             loss1 = F.cross_entropy(output, target[:, 0].long(), weight=weight)
             loss2 = F.cross_entropy(output, target[:, 1].long(), weight=weight)
