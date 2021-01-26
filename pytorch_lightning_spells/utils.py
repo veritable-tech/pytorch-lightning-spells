@@ -76,3 +76,24 @@ def freeze_layers(layer_groups: Sequence[Layer], freeze_flags: Sequence[bool]):
     assert len(freeze_flags) == len(layer_groups)
     for layer, flag in zip(layer_groups, freeze_flags):
         set_trainable(layer, not flag)
+
+# -----------------------------------------------------------
+# Separate BatchNorm2d and GroupNorm paremeters from others
+# -----------------------------------------------------------
+
+
+def seperate_parameters(module):
+    decay, no_decay = [], []
+    if isinstance(module, list):
+        for entry in module:
+            tmp = seperate_parameters(entry)
+            decay.extend(tmp[0])
+            no_decay.extend(tmp[1])
+    else:
+        for submodule in module.modules():
+            if not list(submodule.children()):  # leaf node
+                if isinstance(submodule, (torch.nn.GroupNorm, torch.nn.BatchNorm2d)):
+                    no_decay.extend(list(submodule.parameters()))
+                else:
+                    decay.extend(list(submodule.parameters()))
+    return decay, no_decay

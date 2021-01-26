@@ -3,7 +3,7 @@ from functools import wraps
 from typing import Sequence
 
 import numpy as np
-from torch.optim.lr_scheduler import _LRScheduler, CosineAnnealingLR as CosineAnnealingLR_
+from torch.optim.lr_scheduler import _LRScheduler, CosineAnnealingLR
 from torch.optim import Optimizer
 
 __all__ = [
@@ -22,7 +22,7 @@ class BaseLRScheduler(_LRScheduler):
         self.optimizer = None
 
 
-class CosineAnnealingScheduler(CosineAnnealingLR_, BaseLRScheduler):
+class CosineAnnealingScheduler(CosineAnnealingLR, BaseLRScheduler):
     pass
 
 
