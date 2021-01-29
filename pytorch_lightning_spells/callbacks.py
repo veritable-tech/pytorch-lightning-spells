@@ -1,7 +1,11 @@
+import socket
+from copy import deepcopy
+from datetime import datetime
 from typing import Optional
 
 import torch
 import numpy as np
+import pytorch_lightning as pl
 from pytorch_lightning.callbacks.base import Callback
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
@@ -52,3 +56,73 @@ class MixupCallback(Callback):
             )
         old_batch[0] = new_batch
         old_batch[1] = new_targets
+
+
+class TelegramCallback(Callback):
+    """A Telegram notification callback
+
+    Reference: https://github.com/huggingface/knockknock
+    """
+    DATE_FORMAT = "%Y-%m-%d %H:%M:%d"
+
+    def __init__(self, token: str, chat_id: int, name: str, report_evals: bool = False):
+        try:
+            import telegram
+        except ImportError:
+            raise ImportError(
+                "Please install 'python-telegram-bot' before using TelegramCallback.")
+        self._token = token
+        self.telegram_bot = telegram.Bot(token=self._token)
+        self.host_name = socket.gethostname()
+        self.report_evals = report_evals
+        self.chat_id = chat_id
+        self.name = name
+        self.start_time = datetime.now()
+
+    def on_train_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        self.start_time = datetime.now()
+        contents = [
+            f'{self.name} has started training 🎬',
+            'Machine name: %s' % self.host_name,
+            'Starting date: %s' % self.start_time.strftime(
+                TelegramCallback.DATE_FORMAT)
+        ]
+        text = '\n'.join(contents)
+        self.telegram_bot.send_message(chat_id=self.chat_id, text=text)
+
+    def on_train_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        end_time = datetime.now()
+        elapsed_time = end_time - self.start_time
+        contents = [
+            f'{self.name} has finished training 🎉',
+            'Machine name: %s' % self.host_name,
+            'Starting date: %s' % self.start_time.strftime(
+                TelegramCallback.DATE_FORMAT),
+            'End date: %s' % end_time.strftime(
+                TelegramCallback.DATE_FORMAT),
+            'Training duration: %s' % str(elapsed_time)
+        ]
+        text = '\n'.join(contents)
+        self.telegram_bot.send_message(chat_id=self.chat_id, text=text)
+
+    def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        metrics, meta = self._collect_metrics(trainer)
+        if self.report_evals is False:
+            return
+        contents = [
+            f"Metrics from {self.name} at step {meta['step']} (epoch {meta['epoch']}):"
+        ]
+        contents += [
+            f"{metric_name}: {metric_value:.6f}"
+            for metric_name, metric_value in metrics.items()
+            if metric_name != "epoch"
+        ]
+        text = '\n'.join(contents)
+        self.telegram_bot.send_message(chat_id=self.chat_id, text=text)
+
+    def _collect_metrics(self, trainer):
+        ckpt_name_metrics = deepcopy(trainer.logger_connector.logged_metrics)
+        # ckpt_name_metrics.update(trainer.logger_connector.callback_metrics)
+        # ckpt_name_metrics.update(trainer.logger_connector.progress_bar_metrics)
+        meta = {"step": trainer.global_step, "epoch": trainer.current_epoch}
+        return ckpt_name_metrics, meta
