@@ -89,11 +89,17 @@ def seperate_parameters(module):
             tmp = seperate_parameters(entry)
             decay.extend(tmp[0])
             no_decay.extend(tmp[1])
+    elif isinstance(module, torch.nn.Parameter):
+        no_decay.append(module)
     else:
         for submodule in module.modules():
             if not list(submodule.children()):  # leaf node
-                if isinstance(submodule, (torch.nn.GroupNorm, torch.nn.BatchNorm2d)):
+                if isinstance(submodule, (
+                        torch.nn.GroupNorm, torch.nn.BatchNorm2d,
+                        torch.nn.LayerNorm, torch.nn.BatchNorm1d)):
                     no_decay.extend(list(submodule.parameters()))
+                elif isinstance(submodule, torch.nn.Identity):
+                    continue
                 else:
                     decay.extend(list(submodule.parameters()))
     return decay, no_decay
