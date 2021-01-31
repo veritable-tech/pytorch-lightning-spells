@@ -75,7 +75,6 @@ class SnapMixCallback(Callback):
             # Avoid infinite loops when something goes wrong
             assert cnt < 10, f"{lamb_1}, {lamb_2}"
 
-        # print(bbx1_2, bbx2_2, bby1_2, bby2_2)
         cropped = batch[rand_index, :, bbx1_2:bbx2_2, bby1_2:bby2_2].clone()
         cropped = F.interpolate(
             cropped,
@@ -84,14 +83,6 @@ class SnapMixCallback(Callback):
             align_corners=True
         )
         batch[:, :, bbx1_1:bbx2_1, bby1_1:bby2_1] = cropped
-        # lamb_1 = (
-        #     1 - target_activation_map[
-        #         :, bbx1_1:bbx2_1, bby1_1:bby2_1
-        #     ].sum(1).sum(1)
-        # ) / (target_activation_map.sum(1).sum(1)+1e-6)
-        # lamb_2 = target_activation_map_b[
-        #     :, bbx1_2:bbx2_2, bby1_2:bby2_2
-        # ].sum(1).sum(1) / (target_activation_map_b.sum(1).sum(1)+1e-6)
         lamb_1 = (
             1 - target_activation_map[
                 :, bbx1_1:bbx2_1, bby1_1:bby2_1
@@ -101,9 +92,6 @@ class SnapMixCallback(Callback):
             :, bbx1_2:bbx2_2, bby1_2:bby2_2
         ].sum(1).sum(1)
 
-        # tmp = lam_a.clone()
-        # lam_a[same_label] += lam_b[same_label]
-        # lam_b[same_label] += tmp[same_label]
         # Fall back to Cutmix lambda
         lamb_cutmix = 1 - (
             (bbx2_1 - bbx1_1) * (bby2_1 - bby1_1) /
