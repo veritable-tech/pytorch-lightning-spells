@@ -87,7 +87,9 @@ class SnapMixCallback(Callback):
             # Avoid infinite loops when something goes wrong
             assert cnt < 10, f"{lamb_1}, {lamb_2}"
 
-        cropped = batch[rand_index, :, bbx1_2:bbx2_2, bby1_2:bby2_2].clone()
+        # print(bby1_1, bby2_1, bbx1_1, bbx2_1)
+        # print(bby1_2, bby2_2, bbx1_2, bbx2_2)
+        cropped = batch[rand_index, :, bby1_2:bby2_2, bbx1_2:bbx2_2].clone()
         cropped = F.interpolate(
             cropped,
             size=(bby2_1-bby1_1, bbx2_1-bbx1_1),
