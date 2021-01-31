@@ -4,12 +4,14 @@ from datetime import datetime
 from typing import Optional, Sequence, Tuple
 
 import torch
+import torch.nn.functional as F
 import numpy as np
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.base import Callback
 # from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
-from .cutmix_utils import cutmix_bbox_and_lam
+from .cutmix_utils import cutmix_bbox_and_lam, rand_bbox
+from .snapmix_utils import get_spm
 
 
 class RandomAugmentationChoiceCallback(Callback):
@@ -36,8 +38,92 @@ class RandomAugmentationChoiceCallback(Callback):
             trainer, pl_module, batch, batch_idx, dataloader_idx)
 
 
+class SnapMixCallback(Callback):
+    """Callback that perform SnapMix augmentation on the input batch.
+
+    Reference: https://github.com/Shaoli-Huang/SnapMix/
+    """
+
+    def __init__(self, model, image_size, half: bool = False, alpha: float = 0.4, softmax_target: bool = True):
+        self._model = model
+        self._half = half
+        self.image_size = image_size
+        self.alpha = alpha
+        assert softmax_target, "SnapMix only support softmax_target=True"
+
+    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
+        old_batch = batch
+        batch, targets = batch
+        target_activation_map = get_spm(
+            batch, targets, self._model, self.image_size, self._half
+        )
+        bs = batch.size(0)
+        lamb_1 = np.clip(np.random.beta(self.alpha, self.alpha), 0.05, 0.95)
+        lamb_2 = np.clip(np.random.beta(self.alpha, self.alpha), 0.05, 0.95)
+        rand_index = torch.randperm(bs).cuda()
+        target_activation_map_b = target_activation_map[rand_index, :, :]
+
+        # same_label = target == target_b
+
+        area_1, area_2, cnt = 0, 0, 0
+        while area_1 <= 0 or area_2 <= 0:
+            bby1_1, bby2_1, bbx1_1, bbx2_1 = rand_bbox(batch.size(), lamb_1)
+            bby1_2, bby2_2, bbx1_2, bbx2_2 = rand_bbox(batch.size(), lamb_2)
+            area_1 = (bby2_1-bby1_1) * (bbx2_1-bbx1_1)
+            area_2 = (bby2_2-bby1_2) * (bbx2_2-bbx1_2)
+            cnt += 1
+            # Avoid infinite loops when something goes wrong
+            assert cnt < 10, f"{lamb_1}, {lamb_2}"
+
+        # print(bbx1_2, bbx2_2, bby1_2, bby2_2)
+        cropped = batch[rand_index, :, bbx1_2:bbx2_2, bby1_2:bby2_2].clone()
+        cropped = F.interpolate(
+            cropped,
+            size=(bbx2_1-bbx1_1, bby2_1-bby1_1),
+            mode='bilinear',
+            align_corners=True
+        )
+        batch[:, :, bbx1_1:bbx2_1, bby1_1:bby2_1] = cropped
+        # lamb_1 = (
+        #     1 - target_activation_map[
+        #         :, bbx1_1:bbx2_1, bby1_1:bby2_1
+        #     ].sum(1).sum(1)
+        # ) / (target_activation_map.sum(1).sum(1)+1e-6)
+        # lamb_2 = target_activation_map_b[
+        #     :, bbx1_2:bbx2_2, bby1_2:bby2_2
+        # ].sum(1).sum(1) / (target_activation_map_b.sum(1).sum(1)+1e-6)
+        lamb_1 = (
+            1 - target_activation_map[
+                :, bbx1_1:bbx2_1, bby1_1:bby2_1
+            ].sum(1).sum(1)
+        )
+        lamb_2 = target_activation_map_b[
+            :, bbx1_2:bbx2_2, bby1_2:bby2_2
+        ].sum(1).sum(1)
+
+        # tmp = lam_a.clone()
+        # lam_a[same_label] += lam_b[same_label]
+        # lam_b[same_label] += tmp[same_label]
+        # Fall back to Cutmix lambda
+        lamb_cutmix = 1 - (
+            (bbx2_1 - bbx1_1) * (bby2_1 - bby1_1) /
+            (batch.size(2) * batch.size(3))
+        )
+        lamb_1[torch.isnan(lamb_1)] = lamb_cutmix
+        lamb_2[torch.isnan(lamb_2)] = 1 - lamb_cutmix
+        # Combine targets
+        new_targets = torch.stack([
+            targets.float(), targets[rand_index].float(),
+            lamb_1.to(targets.device), lamb_2.to(targets.device)
+        ], dim=1)
+        old_batch[0] = batch
+        old_batch[1] = new_targets
+
+
 class CutMixCallback(Callback):
-    """Assumes the first dimension is batch.
+    """Callback that perform CutMix augmentation on the input batch.
+
+    Assumes the first dimension is batch.
 
     Reference: https://github.com/rwightman/pytorch-image-models/blob/8c9814e3f500e8b37aae86dd4db10aba2c295bd2/timm/data/mixup.py
     """
