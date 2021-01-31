@@ -13,16 +13,26 @@ from .cutmix_utils import cutmix_bbox_and_lam
 
 
 class RandomAugmentationChoiceCallback(Callback):
-    def __init__(self, callbacks: Sequence[Callback], p: Sequence[Callback]):
+    def __init__(
+            self, callbacks: Sequence[Callback], p: Sequence[Callback],
+            no_op_warmup: int = 0, no_op_prob: float = 0):
         self.p = np.asarray(p) / np.sum(p)
         self.callbacks = callbacks
+        self.no_op_warmup = no_op_warmup
+        self.step = 0
+        self.no_op_prob = no_op_prob
         assert len(p) == len(callbacks)
 
     def get_callback(self):
         return np.random.choice(self.callbacks, p=self.p)
 
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
-        return self.get_callback().on_train_batch_start(
+        self.step += 1
+        if self.no_op_warmup >= self.step:
+            return
+        if self.no_op_prob and np.random.random() < self.no_op_prob:
+            return
+        self.get_callback().on_train_batch_start(
             trainer, pl_module, batch, batch_idx, dataloader_idx)
 
 
