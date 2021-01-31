@@ -10,7 +10,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks.base import Callback
 # from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
-from .cutmix_utils import cutmix_bbox_and_lam, rand_bbox
+from .cutmix_utils import cutmix_bbox_and_lam, rand_bbox, rand_bbox_minmax
 from .snapmix_utils import get_spm
 
 
@@ -46,11 +46,15 @@ class SnapMixCallback(Callback):
     **Requires the model to have implemented `extract_features` and `get_fc` methods.**
     """
 
-    def __init__(self, model, image_size, half: bool = False, alpha: float = 0.4, softmax_target: bool = True):
+    def __init__(
+            self, model, image_size, half: bool = False,
+            minmax: Optional[Tuple[float, float]] = None,
+            alpha: float = 0.4, softmax_target: bool = True):
         self._model = model
         self._half = half
         self.image_size = image_size
         self.alpha = alpha
+        self.minmax = minmax
         assert softmax_target, "SnapMix only support softmax_target=True"
 
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
@@ -69,8 +73,14 @@ class SnapMixCallback(Callback):
 
         area_1, area_2, cnt = 0, 0, 0
         while area_1 <= 0 or area_2 <= 0:
-            bby1_1, bby2_1, bbx1_1, bbx2_1 = rand_bbox(batch.size(), lamb_1)
-            bby1_2, bby2_2, bbx1_2, bbx2_2 = rand_bbox(batch.size(), lamb_2)
+            if self.minmax:
+                bby1_1, bby2_1, bbx1_1, bbx2_1 = rand_bbox_minmax(
+                    batch.size(), self.minmax)
+                bby1_2, bby2_2, bbx1_2, bbx2_2 = rand_bbox_minmax(
+                    batch.size(), self.minmax)
+            else:
+                bby1_1, bby2_1, bbx1_1, bbx2_1 = rand_bbox(batch.size(), lamb_1)
+                bby1_2, bby2_2, bbx1_2, bbx2_2 = rand_bbox(batch.size(), lamb_2)
             area_1 = (bby2_1-bby1_1) * (bbx2_1-bbx1_1)
             area_2 = (bby2_2-bby1_2) * (bbx2_2-bbx1_2)
             cnt += 1
