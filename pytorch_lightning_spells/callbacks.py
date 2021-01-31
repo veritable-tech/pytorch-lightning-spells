@@ -42,6 +42,8 @@ class SnapMixCallback(Callback):
     """Callback that perform SnapMix augmentation on the input batch.
 
     Reference: https://github.com/Shaoli-Huang/SnapMix/
+
+    **Requires the model to have implemented `extract_features` and `get_fc` methods.**
     """
 
     def __init__(self, model, image_size, half: bool = False, alpha: float = 0.4, softmax_target: bool = True):
