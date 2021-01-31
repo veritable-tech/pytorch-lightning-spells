@@ -80,18 +80,18 @@ class SnapMixCallback(Callback):
         cropped = batch[rand_index, :, bbx1_2:bbx2_2, bby1_2:bby2_2].clone()
         cropped = F.interpolate(
             cropped,
-            size=(bbx2_1-bbx1_1, bby2_1-bby1_1),
+            size=(bby2_1-bby1_1, bbx2_1-bbx1_1),
             mode='bilinear',
             align_corners=True
         )
-        batch[:, :, bbx1_1:bbx2_1, bby1_1:bby2_1] = cropped
+        batch[:, :, bby1_1:bby2_1, bbx1_1:bbx2_1] = cropped
         lamb_1 = (
             1 - target_activation_map[
-                :, bbx1_1:bbx2_1, bby1_1:bby2_1
+                :, bby1_1:bby2_1, bbx1_1:bbx2_1
             ].sum(1).sum(1)
         )
         lamb_2 = target_activation_map_b[
-            :, bbx1_2:bbx2_2, bby1_2:bby2_2
+            :, bby1_2:bby2_2, bbx1_2:bbx2_2
         ].sum(1).sum(1)
 
         # Fall back to Cutmix lambda
