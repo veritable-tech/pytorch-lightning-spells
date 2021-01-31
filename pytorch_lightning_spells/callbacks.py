@@ -181,7 +181,7 @@ class MixUpCallback(Callback):
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
         old_batch = batch
         batch, targets = batch
-        permuted_idx = torch.randperm(batch.size(0)).to(batch.device)
+        batch_flipped = batch.flip(0).clone()
         lambd = np.random.beta(self.alpha, self.alpha, batch.size(0))
         lambd = np.concatenate(
             [lambd[:, np.newaxis], 1-lambd[:, np.newaxis]], axis=1
@@ -192,7 +192,7 @@ class MixUpCallback(Callback):
         ).expand(-1, *batch.shape[1:])
         # Combine input batch
         new_batch = (batch * lambd_tensor +
-                     batch[permuted_idx] * (1-lambd_tensor))
+                     batch_flipped * (1-lambd_tensor))
         # Create the tensor and expand (for target)
         lambd_tensor = batch.new(lambd).view(
             -1, *[1 for _ in range(len(targets.size())-1)]
@@ -200,12 +200,12 @@ class MixUpCallback(Callback):
         # Combine targets
         if self.softmax_target:
             new_targets = torch.stack([
-                targets.float(), targets[permuted_idx].float(), lambd_tensor
+                targets.float(), targets.flip(0).float(), lambd_tensor
             ], dim=1)
         else:
             new_targets = (
                 targets * lambd_tensor +
-                targets[permuted_idx] * (1-lambd_tensor)
+                targets.flip(0) * (1-lambd_tensor)
             )
         old_batch[0] = new_batch
         old_batch[1] = new_targets
