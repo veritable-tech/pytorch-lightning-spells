@@ -234,6 +234,13 @@ class TelegramCallback(Callback):
         self.name = name
         self.start_time = datetime.now()
 
+    def send_message(self, text):
+        try:
+            self.telegram_bot.send_message(chat_id=self.chat_id, text=text)
+        except telegram.error.TimeOut:
+            # Ignore timeouts and continue training
+            pass
+
     def on_train_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         self.start_time = datetime.now()
         contents = [
@@ -243,7 +250,7 @@ class TelegramCallback(Callback):
                 TelegramCallback.DATE_FORMAT)
         ]
         text = '\n'.join(contents)
-        self.telegram_bot.send_message(chat_id=self.chat_id, text=text)
+        self.send_message(text=text)
 
     def on_train_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         end_time = datetime.now()
@@ -258,7 +265,7 @@ class TelegramCallback(Callback):
             'Training duration: %s' % str(elapsed_time)
         ]
         text = '\n'.join(contents)
-        self.telegram_bot.send_message(chat_id=self.chat_id, text=text)
+        self.send_message(text=text)
 
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
         metrics, meta = self._collect_metrics(trainer)
@@ -273,7 +280,7 @@ class TelegramCallback(Callback):
             if metric_name != "epoch"
         ]
         text = '\n'.join(contents)
-        self.telegram_bot.send_message(chat_id=self.chat_id, text=text)
+        self.send_message(text=text)
 
     def _collect_metrics(self, trainer):
         ckpt_name_metrics = deepcopy(trainer.logger_connector.logged_metrics)
