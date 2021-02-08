@@ -49,12 +49,14 @@ class SnapMixCallback(Callback):
     def __init__(
             self, model, image_size, half: bool = False,
             minmax: Optional[Tuple[float, float]] = None,
+            cutmix_randbox: bool = False, # cutmix style randbox
             alpha: float = 0.4, softmax_target: bool = True):
         self._model = model
         self._half = half
         self.image_size = image_size
         self.alpha = alpha
         self.minmax = minmax
+        self.cutmix_randbox = cutmix_randbox
         assert softmax_target, "SnapMix only support softmax_target=True"
 
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
@@ -81,6 +83,9 @@ class SnapMixCallback(Callback):
             else:
                 bby1_1, bby2_1, bbx1_1, bbx2_1 = rand_bbox(batch.size(), lamb_1)
                 bby1_2, bby2_2, bbx1_2, bbx2_2 = rand_bbox(batch.size(), lamb_2)
+            if self.cutmix_randbox is True:
+                # Use only one random bounding box
+                bby1_2, bby2_2, bbx1_2, bbx2_2 = bby1_1, bby2_1, bbx1_1, bbx2_1
             area_1 = (bby2_1-bby1_1) * (bbx2_1-bbx1_1)
             area_2 = (bby2_2-bby1_2) * (bbx2_2-bbx1_2)
             cnt += 1
