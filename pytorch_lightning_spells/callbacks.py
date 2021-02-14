@@ -8,6 +8,7 @@ import torch.nn.functional as F
 import numpy as np
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.base import Callback
+from pytorch_lightning.callbacks import ModelCheckpoint
 # from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from .cutmix_utils import cutmix_bbox_and_lam, rand_bbox, rand_bbox_minmax
@@ -49,7 +50,7 @@ class SnapMixCallback(Callback):
     def __init__(
             self, model, image_size, half: bool = False,
             minmax: Optional[Tuple[float, float]] = None,
-            cutmix_bbox: bool = False, # cutmix style randbox
+            cutmix_bbox: bool = False,  # cutmix style randbox
             alpha: float = 0.4, softmax_target: bool = True):
         self._model = model
         self._half = half
@@ -293,3 +294,38 @@ class TelegramCallback(Callback):
         # ckpt_name_metrics.update(trainer.logger_connector.progress_bar_metrics)
         meta = {"step": trainer.global_step, "epoch": trainer.current_epoch}
         return ckpt_name_metrics, meta
+
+
+class LookaheadCallback(Callback):
+    """Switch to the slow weights before evaluation and switch back after.
+    """
+
+    def on_validation_start(self, trainer, pl_module):
+        optimizer = trainer.optimizers(use_pl_optimizer=False)
+        if hasattr(optimizer, "_backup_and_load_cache"):
+            print("load slow parameters")
+            optimizer._backup_and_load_cache()
+
+    def on_validation_end(self, trainer, pl_module):
+        optimizer = trainer.optimizers(use_pl_optimizer=False)
+        if hasattr(optimizer, "_clear_and_load_backup"):
+            print("load fast parameters")
+            optimizer._clear_and_load_backup()
+
+
+class LookaheadModelCheckpoint(ModelCheckpoint):
+    """Combines LookaheadCallback and ModelCheckpoint
+    """
+
+    def on_validation_start(self, trainer, pl_module):
+        for optimizer in trainer.optimizers:
+            if hasattr(optimizer, "_backup_and_load_cache"):
+                print("load slow parameters")
+                optimizer._backup_and_load_cache()
+
+    def on_validation_end(self, trainer, pl_module):
+        self.save_checkpoint(trainer, pl_module)
+        for optimizer in trainer.optimizers:
+            if hasattr(optimizer, "_clear_and_load_backup"):
+                print("load fast parameters")
+                optimizer._clear_and_load_backup()
