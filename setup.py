@@ -3,7 +3,7 @@ import os
 
 from setuptools import find_packages, setup
 
-import pytorch_lightning_spells.version as pls
+from pytorch_lightning_spells import version as pls
 
 setup(
     name="pytorch-lightning-spells",
