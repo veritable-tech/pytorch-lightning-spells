@@ -11,6 +11,10 @@ except (ImportError, ModuleNotFoundError):
     sys.path.append("pytorch_lightning_spells")
     import version as pls
 
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
 setup(
     name="pytorch-lightning-spells",
     version=pls.__version__,
@@ -21,7 +25,8 @@ setup(
     download_url='https://github.com/veritable-tech/pytorch-lightning-spells',
     license=pls.__license__,
     packages=find_packages(exclude=['tests', 'tests/*', 'benchmarks']),
-
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     keywords=['deep learning', 'pytorch', 'AI'],
     python_requires='>=3.6',
     setup_requires=[],
