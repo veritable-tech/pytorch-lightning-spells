@@ -17,7 +17,7 @@ from . import samplers
 
 
 class BaseModule(pl.LightningModule):
-    """A boilerplate module
+    """A boilerplate module with some sensible defaults.
     """
 
     def __init__(self, ema_alpha: float = 0.02):
