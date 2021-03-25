@@ -18,6 +18,8 @@ python:
   install:
     - method: pip
       path: .
+    - method: pip
+      path: pytorch_lightning>=1.1.3
   # install:
   #   - requirements: docs/requirements.txt
   #   - method: pip
