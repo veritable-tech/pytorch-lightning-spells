@@ -8,7 +8,7 @@ jobs:
     docker:
       # specify the version you desire here
       # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      - image: circleci/python:3.7.2-stretch
+      - image: ceshine/miniconda
 
     working_directory: ~/repo
 
@@ -25,14 +25,13 @@ jobs:
       - run:
           name: install dependencies
           command: |
-            python3 -m venv venv
-            . venv/bin/activate
+            conda install pytorch torchvision torchaudio cpuonly -c pytorch
             pip install .
             pip install pytest
 
       - save_cache:
           paths:
-            - ./venv
+            - /opt/conda
           key: v1-dependencies-{{ checksum "setup.py" }}
 
       - run:
@@ -42,7 +41,6 @@ jobs:
       - run:
           name: run tests
           command: |
-            . venv/bin/activate
             pytest --doctest-modules
 
       - store_artifacts:
