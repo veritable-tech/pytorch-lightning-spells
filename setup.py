@@ -3,17 +3,17 @@ import os
 
 from setuptools import find_packages, setup
 
-import pytorch_lightning_spells
+import pytorch_lightning_spells.version as pls
 
 setup(
     name="pytorch-lightning-spells",
-    version=pytorch_lightning_spells.__version__,
-    description=pytorch_lightning_spells.__docs__,
-    author=pytorch_lightning_spells.__author__,
-    author_email=pytorch_lightning_spells.__author_email__,
+    version=pls.__version__,
+    description=pls.__docs__,
+    author=pls.__author__,
+    author_email=pls.__author_email__,
     url='https://github.com/veritable-tech/pytorch-lightning-spells',
     download_url='https://github.com/veritable-tech/pytorch-lightning-spells',
-    license=pytorch_lightning_spells.__license__,
+    license=pls.__license__,
     packages=find_packages(exclude=['tests', 'tests/*', 'benchmarks']),
 
     keywords=['deep learning', 'pytorch', 'AI'],

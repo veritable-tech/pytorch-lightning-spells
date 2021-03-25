@@ -1,8 +1,4 @@
-__version__ = "0.0.2"
-__docs__ = "Some useful plugins for PyTorch Lightning."
-__author__ = "Ceshine Lee"
-__author_email__ = "ceshine@veritable.pw"
-__license__ = 'Apache-2.0'
+
 
 import pytorch_lightning as pl
 
@@ -14,7 +10,7 @@ from . import utils
 from . import lr_schedulers
 from . import metrics
 from . import samplers
-
+from .version import *
 
 class BaseModule(pl.LightningModule):
     """A boilerplate module with some sensible defaults.
