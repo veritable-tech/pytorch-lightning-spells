@@ -42,7 +42,7 @@ class RandomAugmentationChoiceCallback(Callback):
 class SnapMixCallback(Callback):
     """Callback that perform SnapMix augmentation on the input batch.
 
-    Reference: https://github.com/Shaoli-Huang/SnapMix/
+    Reference: `Shaoli-Huang/SnapMix <https://github.com/Shaoli-Huang/SnapMix/>`_
 
     **Requires the model to have implemented `extract_features` and `get_fc` methods.**
     """
@@ -133,7 +133,7 @@ class CutMixCallback(Callback):
 
     Assumes the first dimension is batch.
 
-    Reference: https://github.com/rwightman/pytorch-image-models/blob/8c9814e3f500e8b37aae86dd4db10aba2c295bd2/timm/data/mixup.py
+    Reference: `rwightman/pytorch-image-models/ <https://github.com/rwightman/pytorch-image-models/blob/8c9814e3f500e8b37aae86dd4db10aba2c295bd2/timm/data/mixup.py>`_
     """
 
     def __init__(self, alpha: float = 0.4, softmax_target: bool = False, minmax: Optional[Tuple[float, float]] = None):
@@ -178,7 +178,7 @@ class MixUpCallback(Callback):
 
     Works best with pytorch_lightning_spells.losses.MixupSoftmaxLoss
 
-    Reference: https://github.com/fastai/fastai/blob/master/fastai/callbacks/mixup.py
+    Reference: `Fast.ai's implementation <https://github.com/fastai/fastai/blob/master/fastai/callbacks/mixup.py>`_
     """
 
     def __init__(self, alpha: float = 0.4, softmax_target: bool = False):
@@ -222,7 +222,7 @@ class MixUpCallback(Callback):
 class TelegramCallback(Callback):
     """A Telegram notification callback
 
-    Reference: https://github.com/huggingface/knockknock
+    Reference: `huggingface/knockknock <https://github.com/huggingface/knockknock>`_
     """
     DATE_FORMAT = "%Y-%m-%d %H:%M:%d"
 

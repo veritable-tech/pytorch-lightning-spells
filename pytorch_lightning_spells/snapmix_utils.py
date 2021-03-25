@@ -1,6 +1,6 @@
 """SnapMix Utility Functions
 
-Reference: https://github.com/Shaoli-Huang/SnapMix/
+Reference: `Shaoli-Huang/SnapMix <https://github.com/Shaoli-Huang/SnapMix/>`_
 """
 import torch
 import torch.nn.functional as F

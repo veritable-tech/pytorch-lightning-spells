@@ -16,7 +16,7 @@ class LabelSmoothCrossEntropy(nn.Module):
     def forward(self, preds, targets, weight=None):
         """Cross Entropy with Label Smoothing
 
-        Reference: https://github.com/wangleiofficial/label-smoothing-pytorch
+        Reference: `wangleiofficial/lable-smoothing-pytorch <https://github.com/wangleiofficial/label-smoothing-pytorch>`_
         """
         n = preds.size()[-1]
         log_preds = F.log_softmax(preds, dim=-1)
@@ -33,7 +33,7 @@ class MixupSoftmaxLoss(nn.Module):
 
     Works best with pytorch_lightning_spells.callbacks.MixupCallback
 
-    Reference: https://github.com/fastai/fastai/blob/master/fastai/callbacks/mixup.py#L6
+    Reference: `Fast.ai's implementation <https://github.com/fastai/fastai/blob/master/fastai/callbacks/mixup.py#L6>`_
     """
 
     def __init__(self, class_weights=None, reduction='mean', label_smooth_eps: float = 0):
