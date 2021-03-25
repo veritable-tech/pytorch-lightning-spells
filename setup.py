@@ -3,7 +3,13 @@ import os
 
 from setuptools import find_packages, setup
 
-from pytorch_lightning_spells import version as pls
+try:
+    from pytorch_lightning_spells import version as pls
+except (ImportError, ModuleNotFoundError):
+    # alternative https://stackoverflow.com/a/67692/4521646
+    import sys
+    sys.path.append("pytorch_lightning_spells")
+    import version as pls
 
 setup(
     name="pytorch-lightning-spells",
@@ -19,7 +25,7 @@ setup(
     keywords=['deep learning', 'pytorch', 'AI'],
     python_requires='>=3.6',
     setup_requires=[],
-    install_requires=["pytorch_lightning>=1.1.3"],
+    install_requires=["pytorch_lightning>=1.1.3", "scipy", "scikit-learn"],
     extras_require={},
     classifiers=[
         'Environment :: Console',

@@ -1,5 +1,3 @@
-
-
 import pytorch_lightning as pl
 
 from . import callbacks
@@ -10,7 +8,13 @@ from . import utils
 from . import lr_schedulers
 from . import metrics
 from . import samplers
-from .version import *
+from .version import (
+    __version__,
+    __docs__,
+    __author__,
+    __author_email__,
+    __license__
+)
 
 class BaseModule(pl.LightningModule):
     """A boilerplate module with some sensible defaults.
