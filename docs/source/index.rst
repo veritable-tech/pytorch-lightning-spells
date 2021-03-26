@@ -61,7 +61,6 @@ Metrics
 
 PyTorch Lightning did not implement metrics that require the entire dataset to have predictions (e.g., AUC, the Spearman correlation). They do have implemented some of them now in the new `TorchMetrics <https://torchmetrics.readthedocs.io/en/latest/#indices-and-tables>`_ package.
 
-
 * `GlobalMetric <pytorch_lightning_spells.metrics.html#pytorch_lightning_spells.metrics.GlobalMetric>`_: Extends this class to create new metrics.
 * `AUC <pytorch_lightning_spells.metrics.html#pytorch_lightning_spells.metrics.AUC>`_
 * `SpearmanCorrelation <pytorch_lightning_spells.metrics.html#pytorch_lightning_spells.metrics.SpearmanCorrelation>`_
@@ -72,6 +71,7 @@ PyTorch Lightning did not implement metrics that require the entire dataset to h
 Utility
 ********
 
+* `BaseModule <file:///mnt/SSD_Data/active_projects/pytorch-lightning-spells/docs/build/html/pytorch_lightning_spells.html#module-pytorch_lightning_spells>`_: A boilerplate Lightning Module to be extended upon.
 * `ScreenLogger <pytorch_lightning_spells.loggers.html#pytorch_lightning_spells.loggers.ScreenLogger>`_: A logger that prints metrics to the screen.
 * `TelegramCallback <pytorch_lightning_spells.callbacks.html#pytorch_lightning_spells.callbacks.TelegramCallback>`_: Sent a Telegram message to you when the training starts, ends, and a validation round is finished.
 * `EMATracker <pytorch_lightning_spells.utils.html#pytorch_lightning_spells.utils.EMATracker>`_: A exponential moving average aggregator.
@@ -84,7 +84,6 @@ Utility
    :caption: Contents:  
 
    index
-   .. pytorch_lightning_spells
 
 Indices and tables
 ####################
