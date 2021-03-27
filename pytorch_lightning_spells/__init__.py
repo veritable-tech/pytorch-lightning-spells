@@ -88,9 +88,8 @@ class BaseModule(pl.LightningModule):
         1. loss: the training loss.
         2. log: a boolean value indicating if this is a loggable step.
 
-        A loggable step is a step that involves an optimizer step. The opposite is
-         a step that only updates the gradients but not the parameters(e.g., in gradient
-         accumulation).
+
+        A loggable step is a step that involves an optimizer step. The opposite is a step that only updates the gradients but not the parameters(e.g., in gradient accumulation).
 
         Args:
             outputs (Dict): the output from `.training_step()` method.

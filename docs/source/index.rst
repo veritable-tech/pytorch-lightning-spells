@@ -76,12 +76,12 @@ Utility
 * `TelegramCallback <pytorch_lightning_spells.callbacks.html#pytorch_lightning_spells.callbacks.TelegramCallback>`_: Sent a Telegram message to you when the training starts, ends, and a validation round is finished.
 * `EMATracker <pytorch_lightning_spells.utils.html#pytorch_lightning_spells.utils.EMATracker>`_: A exponential moving average aggregator.
 * `count_parameters <pytorch_lightning_spells.utils.html#pytorch_lightning_spells.utils.count_parameters>`_: A function that returns the total number of parameters in a model.
-* `seperate_parameters <pytorch_lightning_spells.utils.html#pytorch_lightning_spells.utils.seperate_parameters>`_: A function that split the parameters of a module into two groups (BatchNorm/GroupNorm/LayerNorm and others), so you can use weight decay on only one of them.
+* `separate_parameters <pytorch_lightning_spells.utils.html#pytorch_lightning_spells.utils.separate_parameters>`_: A function that split the parameters of a module into two groups (BatchNorm/GroupNorm/LayerNorm and others), so you can use weight decay on only one of them.
 
 .. toctree::
    :hidden:
    :maxdepth: 3
-   :caption: Contents:  
+   :caption: Contents:
 
    index
 
