@@ -5,3 +5,15 @@
 Some useful plugins for [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning).
 
 [Documentation](https://pytorch-lightning-spells.readthedocs.io/)
+
+## Installation
+
+```bash
+pip install pytorch-lightning-spells
+```
+
+or the latest in the main branch:
+
+```bash
+pip install https://github.com/veritable-tech/pytorch-lightning-spells/archive/master.zip
+```
