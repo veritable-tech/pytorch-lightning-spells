@@ -16,6 +16,16 @@ from .snapmix_utils import get_spm
 
 
 class RandomAugmentationChoiceCallback(Callback):
+    """Randomly pick an augmentation callback to use for each batch.
+
+    Also supports no-op warmups and no-op probability.
+
+    Args:
+        callbacks (Sequence[Callback]): A sequence of calbacks to choose from.
+        p (Sequence[Callback]): A sequence of probabilities for the callbacks.
+        no_op_warmup (int, optional): the number of initial steps that should not have any augmentation. Defaults to 0.
+        no_op_prob (float, optional): the probability of a step that has no augmentation. Defaults to 0.
+    """
     def __init__(
             self, callbacks: Sequence[Callback], p: Sequence[Callback],
             no_op_warmup: int = 0, no_op_prob: float = 0):
