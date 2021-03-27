@@ -89,23 +89,23 @@ def count_parameters(parameters: Iterable[Union[torch.Tensor, Parameter]]):
 # -----------------------------------
 
 
-def children(m):
+def _children(m):
     return m if isinstance(m, (list, tuple)) else list(m.children())
 
 
-def set_trainable_attr(m, b):
+def _set_trainable_attr(m, b):
     m.trainable = b
     for p in m.parameters():
         p.requires_grad = b
 
 
-def apply_leaf(m, f):
-    c = children(m)
+def _apply_leaf(m, f):
+    c = _children(m)
     if isinstance(m, torch.nn.Module):
         f(m)
     if len(c) > 0:
         for l in c:
-            apply_leaf(l, f)
+            _apply_leaf(l, f)
 
 
 def set_trainable(layer: Layer, trainable: bool):
@@ -127,7 +127,7 @@ def set_trainable(layer: Layer, trainable: bool):
         >>> model[0].weight.requires_grad
         True
     """
-    apply_leaf(layer, lambda m: set_trainable_attr(m, trainable))
+    _apply_leaf(layer, lambda m: _set_trainable_attr(m, trainable))
 
 
 def freeze_layers(layer_groups: Sequence[Layer], freeze_flags: Sequence[bool]):
