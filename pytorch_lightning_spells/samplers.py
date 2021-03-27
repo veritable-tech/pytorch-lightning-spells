@@ -16,7 +16,7 @@ class SortishSampler(Sampler):
     Without that max key returned first multiple buffers may be allocated when the first created isn't large enough
     to hold the next in the sequence.
 
-    Taken from `fastai library <https://github.com/fastai/fastai1/blob/bcef12e95405655481bb309761f8c552b51b2bd2/fastai/text/data.py#L107>`_.
+    Taken from `Fast.ai <https://github.com/fastai/fastai1/blob/bcef12e95405655481bb309761f8c552b51b2bd2/fastai/text/data.py#L107>`_.
 
     Args:
         data_source (Iterable): The data you want to sample from.
@@ -71,7 +71,7 @@ class SortishSampler(Sampler):
 class SortSampler(Sampler):
     """Go through the text data by order of length (longest to shortest).
 
-    Taken from `fastai library <https://github.com/fastai/fastai1/blob/bcef12e95405655481bb309761f8c552b51b2bd2/fastai/text/data.py#L99>`_.
+    Taken from `Fast.ai library <https://github.com/fastai/fastai1/blob/bcef12e95405655481bb309761f8c552b51b2bd2/fastai/text/data.py#L99>`_.
 
     Args:
         data_source (Iterable): The data you want to sample from.
@@ -79,7 +79,7 @@ class SortSampler(Sampler):
 
     Example:
         >>> data_source = [[0], [0, 1], [0, 1, 2, 3]]
-        >>> sampler = SortSampler(data_source, key=lambda idx: len(data_source[idx]))        
+        >>> sampler = SortSampler(data_source, key=lambda idx: len(data_source[idx]))
         >>> len(list(sampler))
         3
         >>> next(iter(sampler)) # the longest entry is the third one.

@@ -6,9 +6,9 @@ from torch.optim.optimizer import Optimizer, required
 
 
 class RAdam(Optimizer):
-    """RAdam optimizer
+    """RAdam optimizer, a theoretically sound variant of Adam.
 
-    Original source: https://github.com/LiyuanLucasLiu/RAdam/blob/master/radam/radam.py
+    Source: `LiyuanLucasLiu/RAdam <https://github.com/LiyuanLucasLiu/RAdam/blob/master/radam/radam.py>`_
 
     Under Apache License 2.0
     """
@@ -114,19 +114,42 @@ class RAdam(Optimizer):
 
 
 class Lookahead(Optimizer):
-    '''PyTorch implementation of the lookahead wrapper.
+    '''Lookahead Wrapper
 
-    source: https://github.com/lonePatient/lookahead_pytorch/blob/master/optimizer.py
-    Lookahead Optimizer: https://arxiv.org/abs/1907.08610
+    * Code: `lonePatient/lookahead_pytorch <https://github.com/lonePatient/lookahead_pytorch/blob/master/optimizer.py>`_
+    * Paper: `Lookahead Optimizer <https://arxiv.org/abs/1907.08610>`_
+
+    Works best with `LookaheadCallback` or `LookaheadModelCheckpoint`.
+
+    Args:
+        optimizer (Optimizer): The inner optimizer.
+        alpha (float, optional): The linear interpolation factor. 1.0 recovers the inner optimizer. Defaults to 0.5.
+        k (int, optional): The number of lookahead steps. Defaults to 6.
+        pullback_momentum (str, optional): Change to inner optimizer momentum on interpolation update. Defaults to "none".
+
+    .. note::
+
+       Currently `pullback_momentum` only supports SGD optimizers with momentum.
+
+    Raises:
+        ValueError: Invalid slow update rate or invalid lookahead steps
+
+    Example:
+
+        >>> model = torch.nn.Linear(10, 1)
+        >>> optimizer = Lookahead(
+        ...     torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.1),
+        ...     alpha=0.5, k=6, pullback_momentum="pullback")
+        ...
+        >>> for _ in range(10):
+        ...     optimizer.zero_grad()
+        ...     loss = model(torch.rand(10))
+        ...     loss.backward()
+        ...     optimizer.step()
+        ...
     '''
 
-    def __init__(self, optimizer, alpha=0.5, k=6, pullback_momentum="none"):
-        '''
-        :param optimizer:inner optimizer
-        :param k (int): number of lookahead steps
-        :param alpha(float): linear interpolation factor. 1.0 recovers the inner optimizer.
-        :param pullback_momentum (str): change to inner optimizer momentum on interpolation update
-        '''
+    def __init__(self, optimizer: Optimizer, alpha: float = 0.5, k: int = 6, pullback_momentum: str = "none"):
         if not 0.0 <= alpha <= 1.0:
             raise ValueError(f'Invalid slow update rate: {alpha}')
         if not 1 <= k:
@@ -186,9 +209,6 @@ class Lookahead(Optimizer):
 
     def step(self, closure=None):
         """Performs a single Lookahead optimization step.
-        Arguments:
-            closure (callable, optional): A closure that reevaluates the model
-                and returns the loss.
         """
         loss = self.optimizer.step(closure)
         self.step_counter += 1
@@ -203,9 +223,10 @@ class Lookahead(Optimizer):
                                                  param_state['cached_params'])  # crucial line
                     param_state['cached_params'].copy_(p.data)
                     if self.pullback_momentum == "pullback":
-                        internal_momentum = self.optimizer.state[p]["momentum_buffer"]
-                        self.optimizer.state[p]["momentum_buffer"] = internal_momentum.mul_(self.alpha).add_(
-                            1.0 - self.alpha, param_state["cached_mom"])
+                        if "cached_mom" in param_state:
+                            internal_momentum = self.optimizer.state[p]["momentum_buffer"]
+                            self.optimizer.state[p]["momentum_buffer"] = internal_momentum.mul_(self.alpha).add_(
+                                1.0 - self.alpha, param_state["cached_mom"])
                         param_state["cached_mom"] = self.optimizer.state[p]["momentum_buffer"]
                     elif self.pullback_momentum == "reset":
                         self.optimizer.state[p]["momentum_buffer"] = torch.zeros_like(
