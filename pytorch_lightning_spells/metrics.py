@@ -43,6 +43,27 @@ class GlobalMetric(Metric):
 
 
 class AUC(GlobalMetric):
+    """AUC: Area Under the ROC Curve
+
+
+    **Binary mode**
+
+    >>> auc = AUC()
+    >>> auc(torch.tensor([0.3, 0.8, 0.2]), torch.tensor([0, 1, 0]))
+    >>> auc(torch.tensor([0.3, 0.3, 0.9]), torch.tensor([1, 1, 0]))
+    >>> round(auc.compute().item(), 2)
+    0.56
+
+    **Multi-class mode**
+
+    This will use the first column as the negative case, and the rest collectively as the positive case.
+
+    >>> auc = AUC()
+    >>> auc(torch.tensor([[0.3, 0.8, 0.2], [0.2, 0.1, 0.1], [0.5, 0.1, 0.7]]).t(), torch.tensor([0, 1, 0]))
+    >>> auc(torch.tensor([[0.3, 0.3, 0.8], [0.2, 0.6, 0.1], [0.5, 0.1, 0.1]]).t(), torch.tensor([1, 1, 0]))
+    >>> round(auc.compute().item(), 2)
+    0.39
+    """
     def compute(self):
         target = torch.cat(self.target, dim=0).cpu().long().numpy()
         preds = torch.cat(self.preds, dim=0).float().cpu().numpy()
@@ -84,6 +105,26 @@ class SpearmanCorrelation(GlobalMetric):
 
 
 class FBeta(GlobalMetric):
+    """The F-beta score is the weighted harmonic mean of precision and recall
+
+    **Binary mode**
+
+    >>> fbeta = FBeta()
+    >>> fbeta(torch.tensor([0.3, 0.8, 0.2]), torch.tensor([0, 1, 0]))
+    >>> fbeta(torch.tensor([0.3, 0.3, 0.9]), torch.tensor([1, 1, 0]))
+    >>> round(fbeta.compute().item(), 2)
+    0.88
+
+    **Multi-class mode**
+
+    This will use the first column as the negative case, and the rest collectively as the positive case.
+
+    >>> fbeta = FBeta()
+    >>> fbeta(torch.tensor([[0.8, 0.3, 0.7], [0.1, 0.1, 0.1], [0.1, 0.6, 0.2]]).t(), torch.tensor([0, 1, 0]))
+    >>> fbeta(torch.tensor([[0.3, 0.7, 0.8], [0.2, 0.2, 0.1], [0.5, 0.1, 0.1]]).t(), torch.tensor([1, 1, 0]))
+    >>> round(fbeta.compute().item(), 4)
+    0.9375
+    """
     def __init__(
         self,
         step: float = 0.02,
