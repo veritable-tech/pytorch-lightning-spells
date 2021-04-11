@@ -54,7 +54,9 @@ class SnapMixCallback(Callback):
 
     Reference: `Shaoli-Huang/SnapMix <https://github.com/Shaoli-Huang/SnapMix/>`_
 
-    **Requires the model to have implemented `extract_features` and `get_fc` methods.**
+    Warning:
+        1. **Requires the model to have implemented `extract_features` and `get_fc` methods.**
+        2. Can only run in CUDA-enabled environments.
     """
 
     def __init__(
@@ -103,15 +105,14 @@ class SnapMixCallback(Callback):
             # Avoid infinite loops when something goes wrong
             assert cnt < 10, f"{lamb_1}, {lamb_2}"
 
-        # print(bby1_1, bby2_1, bbx1_1, bbx2_1)
-        # print(bby1_2, bby2_2, bbx1_2, bbx2_2)
         cropped = batch[rand_index, :, bby1_2:bby2_2, bbx1_2:bbx2_2].clone()
-        cropped = F.interpolate(
-            cropped,
-            size=(bby2_1-bby1_1, bbx2_1-bbx1_1),
-            mode='bilinear',
-            align_corners=True
-        )
+        if self.cutmix_bbox is False:
+            cropped = F.interpolate(
+                cropped,
+                size=(bby2_1-bby1_1, bbx2_1-bbx1_1),
+                mode='bilinear',
+                align_corners=True
+            )
         batch[:, :, bby1_1:bby2_1, bbx1_1:bbx2_1] = cropped
         lamb_1 = (
             1 - target_activation_map[
