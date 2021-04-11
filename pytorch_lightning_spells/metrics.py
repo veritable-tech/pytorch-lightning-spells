@@ -44,11 +44,11 @@ class GlobalMetric(Metric):
 
 class AUC(GlobalMetric):
     def compute(self):
-        preds = torch.sigmoid(
-            torch.cat(self.preds, dim=0).float()).cpu().numpy()
         target = torch.cat(self.target, dim=0).cpu().long().numpy()
-        preds = 1 - preds[:, 0]
-        target = (target != 0).astype(int)
+        preds = torch.cat(self.preds, dim=0).float().cpu().numpy()
+        if len(preds.shape) > 1:
+            preds = 1 - preds[:, 0]
+            target = (target != 0).astype(int)
         if len(np.unique(target)) == 1:
             return torch.tensor(0, device=self.preds[0].device)
         return torch.tensor(roc_auc_score(target, preds), device=self.preds[0].device)
@@ -114,11 +114,11 @@ class FBeta(GlobalMetric):
         return best, best_thres
 
     def compute(self):
-        preds = torch.sigmoid(
-            torch.cat(self.preds, dim=0).float()).cpu().numpy()
+        preds = torch.cat(self.preds, dim=0).float().cpu().numpy()
         target = torch.cat(self.target, dim=0).cpu().long().numpy()
-        preds = 1 - preds[:, 0]
-        target = (target != 0).astype(int)
+        if len(preds.shape) > 1:
+            preds = 1 - preds[:, 0]
+            target = (target != 0).astype(int)
         if len(np.unique(target)) == 1:
             return torch.tensor(0, device=self.preds[0].device)
         best_fbeta, best_thres = self.find_best_fbeta_threshold(
