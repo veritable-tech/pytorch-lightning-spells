@@ -22,6 +22,8 @@ Augmentation
 * `CutMixCallback <pytorch_lightning_spells.callbacks.html#pytorch_lightning_spells.callbacks.CutMixCallback>`_
 * `SnapMixCallback <pytorch_lightning_spells.callbacks.html#pytorch_lightning_spells.callbacks.SnapMixCallback>`_
 
+`A notebook is available on Kaggle <https://www.kaggle.com/ceshine/mixup-cutmix-and-snapmix-demo>`_ demonstrating the effect of MixUp, CutMix, and SnapMix.
+
 `RandomAugmentationChoiceCallback <pytorch_lightning_spells.callbacks.html#pytorch_lightning_spells.callbacks.RandomAugmentationChoiceCallback>`_ randomly picks one of the given callbacks for each batch. It also supports a no-op warmup period and setting a no-op probability.
 
 NLP
