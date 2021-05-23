@@ -94,15 +94,20 @@ def _children(m):
 
 
 def _set_trainable_attr(m, b):
+    if isinstance(m, torch.nn.Parameter):
+        m.requires_grad = b
+        return
     m.trainable = b
     for p in m.parameters():
         p.requires_grad = b
 
 
 def _apply_leaf(m, f):
-    c = _children(m)
-    if isinstance(m, torch.nn.Module):
+    if isinstance(m, (torch.nn.Module, torch.nn.Parameter)):
         f(m)
+        if isinstance(m, torch.nn.Parameter):
+            return
+    c = _children(m)
     if len(c) > 0:
         for l in c:
             _apply_leaf(l, f)
