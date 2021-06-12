@@ -10,6 +10,10 @@ This package contains some useful plugins for PyTorch Lightning. Many of those a
 
 The following is a categorized list of available classes and functions:
 
+.. contents:: Table of Contents
+   :local:
+   :depth: 2
+
 CV
 ***
 
@@ -81,11 +85,10 @@ Utility
 * `separate_parameters <pytorch_lightning_spells.utils.html#pytorch_lightning_spells.utils.separate_parameters>`_: A function that split the parameters of a module into two groups (BatchNorm/GroupNorm/LayerNorm and others), so you can use weight decay on only one of them.
 
 .. toctree::
-   :hidden:
    :maxdepth: 3
-   :caption: Contents:
+   :caption: Package Contents:
 
-   index
+   pytorch_lightning_spells
 
 Indices and tables
 ####################

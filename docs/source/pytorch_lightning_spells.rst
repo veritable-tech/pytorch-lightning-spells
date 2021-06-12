@@ -2,6 +2,8 @@ pytorch\_lightning\_spells package
 ==================================
 
 .. automodule:: pytorch_lightning_spells
+   :autosummary:
+   :autosummary-no-nesting:
    :members:
    :undoc-members:
    :show-inheritance:
