@@ -10,10 +10,6 @@ This package contains some useful plugins for PyTorch Lightning. Many of those a
 
 The following is a categorized list of available classes and functions:
 
-.. contents:: Table of Contents
-   :local:
-   :depth: 2
-
 CV
 ***
 
