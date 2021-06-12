@@ -86,8 +86,9 @@ Utility
 
 .. toctree::
    :maxdepth: 3
-   :caption: Package Contents:
+   :caption: Contents:
 
+   index
    pytorch_lightning_spells
 
 Indices and tables
