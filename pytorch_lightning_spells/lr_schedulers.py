@@ -1,7 +1,8 @@
 import weakref
 from functools import wraps
-from typing import Sequence
+from typing import Sequence, Union
 
+import torch
 import numpy as np
 from torch.optim.lr_scheduler import _LRScheduler, CosineAnnealingLR
 from torch.optim import Optimizer
@@ -31,18 +32,15 @@ class LinearLR(BaseLRScheduler):
     iterations.
     """
 
-    def __init__(self, optimizer, min_lr_ratio, total_epochs, upward=True, last_epoch=-1):
+    def __init__(self, optimizer: torch.optim.Optimizer, min_lr_ratio: float, total_epochs: float, upward: bool=True, last_epoch: int=-1):
         """Initialize a scheduler.
 
-        Parameters
-        ----------
-        optimizer : Union[torch.optim.Optimizer, apex.fp16_utils.fp16_optimizer.FP16_Optimizer]
-        min_lr_ratio : float
-            min_lr_ratio * base_lr will be the starting learning rate.
-        total_epochs : int
-            the total number of "steps" in this run.
-        last_epoch : int, optional
-            the index of last epoch, by default -1.
+        Args:
+            optimizer (Union[torch.optim.Optimizer, apex.fp16_utils.fp16_optimizer.FP16_Optimizer]):
+            min_lr_ratio:  min_lr_ratio * base_lr will be the starting learning rate.
+            total_epochs: the total number of "steps" in this run.
+            upward: whether the learning rate goes up or down. Defaults to True.
+            last_epoch: the index of last epoch. Defaults to -1.
         """
         assert min_lr_ratio < 1
         self.upward = upward

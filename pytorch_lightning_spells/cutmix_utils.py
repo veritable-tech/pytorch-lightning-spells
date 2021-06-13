@@ -1,15 +1,19 @@
+from typing import Tuple, Optional, Union, List
+
 import numpy as np
 
 
-def rand_bbox(img_shape, lam, margin=0., count=None):
+def rand_bbox(img_shape:Tuple, lam: float, margin: float=0., count: Optional[int]=None):
     """ Standard CutMix bounding-box
+
     Generates a random square bbox based on lambda value. This impl includes
     support for enforcing a border margin as percent of bbox dimensions.
+
     Args:
-        img_shape (tuple): Image shape as tuple
-        lam (float): Cutmix lambda value
-        margin (float): Percentage of bbox dimension to enforce as margin (reduce amount of box outside image)
-        count (int): Number of bbox to generate
+        img_shape: Image shape as tuple
+        lam: Cutmix lambda value
+        margin: Percentage of bbox dimension to enforce as margin (reduce amount of box outside image)
+        count: Number of bbox to generate
     """
     ratio = np.sqrt(1 - lam)
     img_h, img_w = img_shape[-2:]
@@ -24,15 +28,17 @@ def rand_bbox(img_shape, lam, margin=0., count=None):
     return yl, yh, xl, xh
 
 
-def rand_bbox_minmax(img_shape, minmax, count=None):
+def rand_bbox_minmax(img_shape: Tuple, minmax: Union[Tuple, List], count: Optional[int]=None):
     """ Min-Max CutMix bounding-box
+
     Inspired by Darknet cutmix impl, generates a random rectangular bbox
     based on min/max percent values applied to each dimension of the input image.
     Typical defaults for minmax are usually in the  .2-.3 for min and .8-.9 range for max.
+
     Args:
-        img_shape (tuple): Image shape as tuple
-        minmax (tuple or list): Min and max bbox ratios (as percent of image size)
-        count (int): Number of bbox to generate
+        img_shape: Image shape as tuple
+        minmax: Min and max bbox ratios (as percent of image size)
+        count: Number of bbox to generate
     """
     assert len(minmax) == 2
     img_h, img_w = img_shape[-2:]
@@ -47,7 +53,7 @@ def rand_bbox_minmax(img_shape, minmax, count=None):
     return yl, yu, xl, xu
 
 
-def cutmix_bbox_and_lam(img_shape, lam, ratio_minmax=None, correct_lam=True, count=None):
+def cutmix_bbox_and_lam(img_shape: Tuple, lam, ratio_minmax=None, correct_lam=True, count: Optional[int]=None):
     """ Generate bbox and apply lambda correction.
     """
     if ratio_minmax is not None:
