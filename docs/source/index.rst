@@ -73,7 +73,7 @@ PyTorch Lightning did not implement metrics that require the entire dataset to h
 Utility
 ********
 
-* `BaseModule <file:///mnt/SSD_Data/active_projects/pytorch-lightning-spells/docs/build/html/pytorch_lightning_spells.html#module-pytorch_lightning_spells>`_: A boilerplate Lightning Module to be extended upon.
+* `BaseModule <pytorch_lightning_spells.html#module-pytorch_lightning_spells>`_: A boilerplate Lightning Module to be extended upon.
 * `ScreenLogger <pytorch_lightning_spells.loggers.html#pytorch_lightning_spells.loggers.ScreenLogger>`_: A logger that prints metrics to the screen.
 * `TelegramCallback <pytorch_lightning_spells.callbacks.html#pytorch_lightning_spells.callbacks.TelegramCallback>`_: Sent a Telegram message to you when the training starts, ends, and a validation round is finished.
 * `EMATracker <pytorch_lightning_spells.utils.html#pytorch_lightning_spells.utils.EMATracker>`_: A exponential moving average aggregator.
