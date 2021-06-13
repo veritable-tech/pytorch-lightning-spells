@@ -58,3 +58,4 @@ html_static_path = ['_static']
 
 # Don't inherit docstrings from parent classes
 autodoc_inherit_docstrings = False
+autodoc_typehints = "description"
