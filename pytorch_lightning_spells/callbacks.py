@@ -335,7 +335,7 @@ class LookaheadModelCheckpoint(ModelCheckpoint):
                 optimizer._backup_and_load_cache()
 
     def on_validation_end(self, trainer, pl_module):
-        self.save_checkpoint(trainer, pl_module)
+        self.save_checkpoint(trainer)
         for optimizer in trainer.optimizers:
             if hasattr(optimizer, "_clear_and_load_backup"):
                 print("load fast parameters")
