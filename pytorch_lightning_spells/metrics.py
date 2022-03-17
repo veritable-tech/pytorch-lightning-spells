@@ -3,8 +3,8 @@ from typing import Optional, Any
 
 import torch
 import numpy as np
+from torchmetrics import Metric
 from scipy.stats import spearmanr
-from pytorch_lightning.metrics import Metric
 from pytorch_lightning.utilities import rank_zero_warn
 from sklearn.metrics import fbeta_score, roc_auc_score
 from sklearn.exceptions import UndefinedMetricWarning
