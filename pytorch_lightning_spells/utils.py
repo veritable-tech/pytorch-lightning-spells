@@ -54,15 +54,11 @@ class EMATracker:
         if self._value is None:
             self._value = new_value
         else:
-            self._value = (
-                new_value * self.alpha +
-                self._value * (1-self.alpha)
-            )
+            self._value = new_value * self.alpha + self._value * (1 - self.alpha)
 
     @property
     def value(self):
-        """The smoothed value.
-        """
+        """The smoothed value."""
         return self._value
 
 
@@ -83,6 +79,7 @@ def count_parameters(parameters: Iterable[Union[torch.Tensor, Parameter]]):
         230
     """
     return int(np.sum(list(p.numel() for p in parameters)))
+
 
 # -----------------------------------
 # Layer freezing from fast.ai v1
@@ -167,12 +164,16 @@ def freeze_layers(layer_groups: Sequence[Layer], freeze_flags: Sequence[bool]):
     for layer, flag in zip(layer_groups, freeze_flags):
         set_trainable(layer, not flag)
 
+
 # -----------------------------------------------------------
 # Separate BatchNorm2d and GroupNorm paremeters from others
 # -----------------------------------------------------------
 
 
-def separate_parameters(module: Union[Parameter, nn.Module, List[nn.Module]]):
+def separate_parameters(
+    module: Union[Parameter, nn.Module, List[nn.Module]],
+    skip_list: Sequence[str] = ("bias",),
+):
     """Separate BatchNorm2d, GroupNorm, and LayerNorm paremeters from others
 
     Args:
@@ -183,19 +184,24 @@ def separate_parameters(module: Union[Parameter, nn.Module, List[nn.Module]]):
 
     Example:
 
-        >>> model = nn.Sequential(nn.Linear(100, 10, bias=False), nn.BatchNorm1d(10))
+        >>> model = nn.Sequential(nn.Linear(100, 10, bias=True), nn.BatchNorm1d(10))
         >>> _ = nn.init.constant_(model[0].weight, 2.)
+        >>> _ = nn.init.constant_(model[0].bias, 1.)
         >>> _ = nn.init.constant_(model[1].weight, 1.)
-        >>> _ = nn.init.constant_(model[1].bias, 0.)
+        >>> _ = nn.init.constant_(model[1].bias, 1.)
         >>> model[0].weight.data.sum().item()
         2000.0
+        >>> model[0].bias.data.sum().item()
+        10.0
         >>> model[1].weight.data.sum().item()
+        10.0
+        >>> model[1].bias.data.sum().item()
         10.0
         >>> decay, no_decay = separate_parameters(model) # separate the parameters
         >>> np.sum([x.sum().detach().numpy() for x in decay]) # nn.Linear
         2000.0
         >>> np.sum([x.sum().detach().numpy() for x in no_decay]) # nn.BatchNorm1d
-        10.0
+        30.0
         >>> optimizer = torch.optim.AdamW([{
         ...    "params": decay, "weight_decay": 0.1
         ... }, {
@@ -205,20 +211,37 @@ def separate_parameters(module: Union[Parameter, nn.Module, List[nn.Module]]):
     decay, no_decay = [], []
     if isinstance(module, list):
         for entry in module:
-            tmp = separate_parameters(entry)
+            tmp = separate_parameters(entry, skip_list=skip_list)
             decay.extend(tmp[0])
             no_decay.extend(tmp[1])
     elif isinstance(module, torch.nn.Parameter):
         no_decay.append(module)
     else:
-        for submodule in module.modules():
-            if not list(submodule.children()):  # leaf node
-                if isinstance(submodule, (
-                        torch.nn.GroupNorm, torch.nn.BatchNorm2d,
-                        torch.nn.LayerNorm, torch.nn.BatchNorm1d)):
+        if isinstance(module, torch.nn.Identity):
+            return decay, no_decay
+        if isinstance(
+            module,
+            (
+                torch.nn.GroupNorm,
+                torch.nn.BatchNorm2d,
+                torch.nn.LayerNorm,
+                torch.nn.BatchNorm1d,
+            ),
+        ):
+            no_decay.extend(list(module.parameters()))
+        else:
+            for module_name, submodule in module.named_children():
+                if module_name in skip_list:
                     no_decay.extend(list(submodule.parameters()))
-                elif isinstance(submodule, torch.nn.Identity):
-                    continue
                 else:
-                    decay.extend(list(submodule.parameters()))
+                    tmp = separate_parameters(submodule, skip_list=skip_list)
+                    decay.extend(tmp[0])
+                    no_decay.extend(tmp[1])
+            for name, parameter in module.named_parameters():
+                if "." in name:
+                    continue
+                if name in skip_list:
+                    no_decay.append(parameter)
+                else:
+                    decay.append(parameter)
     return decay, no_decay

@@ -26,8 +26,8 @@ class GlobalMetric(Metric):
         self.add_state("target", default=[], dist_reduce_fx=None)
 
         rank_zero_warn(
-            'This Metric will save all targets and predictions in buffer.'
-            ' For large datasets this may lead to large memory footprint.'
+            "This Metric will save all targets and predictions in buffer."
+            " For large datasets this may lead to large memory footprint."
         )
 
     def update(self, preds: torch.Tensor, target: torch.Tensor):
@@ -64,6 +64,7 @@ class AUC(GlobalMetric):
     >>> round(auc.compute().item(), 2)
     0.39
     """
+
     def compute(self):
         target = torch.cat(self.target, dim=0).cpu().long().numpy()
         preds = torch.cat(self.preds, dim=0).float().cpu().numpy()
@@ -96,9 +97,7 @@ class SpearmanCorrelation(GlobalMetric):
             preds = torch.sigmoid(preds)
         preds = preds.cpu().numpy()
         target = torch.cat(self.target, dim=0).cpu().float().numpy()
-        spearman_score = spearmanr(
-            target, preds
-        ).correlation
+        spearman_score = spearmanr(target, preds).correlation
         if len(np.unique(target)) == 1:
             return torch.tensor(0, device=self.preds[0].device)
         return torch.tensor(spearman_score, device=self.preds[0].device)
@@ -125,6 +124,7 @@ class FBeta(GlobalMetric):
     >>> round(fbeta.compute().item(), 4)
     0.9375
     """
+
     def __init__(
         self,
         step: float = 0.02,
@@ -144,11 +144,14 @@ class FBeta(GlobalMetric):
     def find_best_fbeta_threshold(self, truth, probs):
         best, best_thres = 0, -1
         with warnings.catch_warnings():
-            warnings.simplefilter('ignore', category=UndefinedMetricWarning)
+            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
             for thres in np.arange(self.step, 1, self.step):
                 current = fbeta_score(
-                    truth, (probs >= thres).astype("int8"),
-                    beta=self.beta, average="binary")
+                    truth,
+                    (probs >= thres).astype("int8"),
+                    beta=self.beta,
+                    average="binary",
+                )
                 if current > best:
                     best = current
                     best_thres = thres
@@ -162,6 +165,5 @@ class FBeta(GlobalMetric):
             target = (target != 0).astype(int)
         if len(np.unique(target)) == 1:
             return torch.tensor(0, device=self.preds[0].device)
-        best_fbeta, best_thres = self.find_best_fbeta_threshold(
-            target, preds)
+        best_fbeta, best_thres = self.find_best_fbeta_threshold(target, preds)
         return torch.tensor(best_fbeta, device=self.preds[0].device)
