@@ -68,6 +68,7 @@ class AUC(GlobalMetric):
     def compute(self):
         target = torch.cat(self.target, dim=0).cpu().long().numpy()
         preds = torch.cat(self.preds, dim=0).float().cpu().numpy()
+        preds = torch.nan_to_num(preds)
         if len(preds.shape) > 1:
             preds = 1 - preds[:, 0]
             target = (target != 0).astype(int)
