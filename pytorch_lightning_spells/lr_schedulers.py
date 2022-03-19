@@ -150,6 +150,7 @@ class MultiStageScheduler(_LRScheduler):
         del results["schedulers"]
         for i, scheduler in enumerate(self.schedulers):
             results["schedulers_" + str(i)] = scheduler.state_dict()
+        return results
 
     def load_state_dict(self, state_dict):
         """Loads the schedulers state.
