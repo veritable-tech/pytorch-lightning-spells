@@ -6,6 +6,8 @@ Some useful plugins for [PyTorch Lightning](https://github.com/PyTorchLightning/
 
 [Documentation](https://pytorch-lightning-spells.readthedocs.io/)
 
+**IMPORTANT NOTICE**: the current release is compatible with PyTorch Lightning version `1.1.3` to `1.4.0`. There is ongoing work on [the pl_1_5 branch](./tree/pl_1_5) to make this library compatible with PyTorch Lightning version `1.5.x`.
+
 ## Installation
 
 ```bash
