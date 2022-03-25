@@ -219,8 +219,10 @@ class Lookahead(Optimizer):
             for group in self.optimizer.param_groups:
                 for p in group['params']:
                     param_state = self.state[p]
-                    p.data.mul_(self.alpha).add_(1.0 - self.alpha,
-                                                 param_state['cached_params'])  # crucial line
+                    p.data.mul_(self.alpha).add_(
+                        param_state['cached_params'],
+                        alpha=1.0 - self.alpha
+                    )  # crucial line
                     param_state['cached_params'].copy_(p.data)
                     if self.pullback_momentum == "pullback":
                         if "cached_mom" in param_state:
