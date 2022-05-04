@@ -54,7 +54,7 @@ class LinearLR(BaseLRScheduler):
         assert min_lr_ratio < 1
         self.upward = upward
         self.min_lr_ratio = min_lr_ratio
-        self.total_epochs = total_epochs - 1  # starts at zero
+        self.total_epochs = total_epochs - 1  # starts from zero
         super(LinearLR, self).__init__(optimizer, last_epoch)
 
     def get_lr(self):
@@ -62,7 +62,7 @@ class LinearLR(BaseLRScheduler):
         if self.upward:
             progress = 1 - current_epoch / self.total_epochs  # 1 to 0
         else:
-            progress = current_epoch / self.total_epochs  # 1 to 0
+            progress = current_epoch / self.total_epochs  # 0 to 1
         # safety measure
         progress = max(min(progress, 1.0), 0.0)
         return [
