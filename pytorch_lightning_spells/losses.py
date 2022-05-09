@@ -13,11 +13,13 @@ class Poly1CrossEntropyLoss(nn.Module):
 
     Reference: `PolyLoss: A Polynomial Expansion Perspective of Classification Loss Functions <http://arxiv.org/abs/2204.12511>`_.
     """
-    def __init__(self,
-                 num_classes: int,
-                 epsilon: float = 1.0,
-                 reduction: str = "none",
-                 weight: Tensor = None):
+
+    def __init__(
+        self,
+        epsilon: float = 1.0,
+        reduction: str = "none",
+        weight: Optional[Tensor] = None
+    ):
         """
         Create instance of Poly1CrossEntropyLoss
         :param num_classes:
@@ -26,28 +28,24 @@ class Poly1CrossEntropyLoss(nn.Module):
         :param weight: manual rescaling weight for each class, passed to Cross-Entropy loss
         """
         super(Poly1CrossEntropyLoss, self).__init__()
-        self.num_classes = num_classes
         self.epsilon = epsilon
         self.reduction = reduction
         self.weight = weight
-        return
 
-    def forward(self, logits, labels):
+    def forward(self, logits, labels, **kwargs):
         """
         Forward pass
         :param logits: tensor of shape [N, num_classes]
         :param labels: tensor of shape [N]
         :return: poly cross-entropy loss
         """
-        labels_onehot = F.one_hot(
-            labels, num_classes=self.num_classes
-        ).to(device=logits.device, dtype=logits.dtype)
-        pt = torch.sum(labels_onehot * F.softmax(logits, dim=-1), dim=-1)
+        probs = F.softmax(logits, dim=-1)
+        if self.weight is not None:
+            self.weight = self.weight.to(labels.device)
+            probs = probs * self.weight.unsqueeze(0) / self.weight.mean()
+        pt = torch.gather(probs, -1, labels.unsqueeze(1))[:, 0]
         CE = F.cross_entropy(
-            input=logits,
-            target=labels,
-            reduction='none',
-            weight=self.weight
+            input=logits, target=labels, reduction="none", weight=self.weight
         )
         poly1 = CE + self.epsilon * (1 - pt)
         if self.reduction == "mean":
@@ -64,14 +62,17 @@ class Poly1FocalLoss(nn.Module):
 
     Reference: `PolyLoss: A Polynomial Expansion Perspective of Classification Loss Functions <http://arxiv.org/abs/2204.12511>`_.
     """
-    def __init__(self,
-                 num_classes: int,
-                 epsilon: float = 1.0,
-                 alpha: float = 0.25,
-                 gamma: float = 2.0,
-                 reduction: str = "none",
-                 weight: Tensor = None,
-                 label_is_onehot: bool = False):
+
+    def __init__(
+        self,
+        num_classes: int,
+        epsilon: float = 1.0,
+        alpha: float = 0.25,
+        gamma: float = 2.0,
+        reduction: str = "none",
+        weight: Tensor = None,
+        label_is_onehot: bool = False,
+    ):
         """
         Create instance of Poly1FocalLoss
         :param num_classes: number of classes
@@ -114,16 +115,17 @@ class Poly1FocalLoss(nn.Module):
             # if labels are of shape [N, ...] e.g. segmentation task
             # convert to one-hot tensor of shape [N, num_classes, ...]
             else:
-                labels = F.one_hot(labels.unsqueeze(
-                    1), self.num_classes).transpose(1, -1).squeeze_(-1)
+                labels = (
+                    F.one_hot(labels.unsqueeze(1), self.num_classes)
+                    .transpose(1, -1)
+                    .squeeze_(-1)
+                )
 
-        labels = labels.to(device=logits.device,
-                           dtype=logits.dtype)
+        labels = labels.to(device=logits.device, dtype=logits.dtype)
 
-        ce_loss = F.binary_cross_entropy_with_logits(input=logits,
-                                                     target=labels,
-                                                     reduction="none",
-                                                     weight=self.weight)
+        ce_loss = F.binary_cross_entropy_with_logits(
+            input=logits, target=labels, reduction="none", weight=self.weight
+        )
         pt = labels * p + (1 - labels) * (1 - p)
         FL = ce_loss * ((1 - pt) ** self.gamma)
 
@@ -166,7 +168,7 @@ class LabelSmoothCrossEntropy(nn.Module):
         if weight is None:
             loss = -log_preds.sum(dim=-1).mean()
         else:
-            loss = -(log_preds.sum(dim=-1) * weight.unsqueeze(0)).mean()
+            loss = -(log_preds.sum(dim=-1) * weight.unsqueeze(0)).mean() / weight.mean()
         nll = F.nll_loss(log_preds, targets, weight=weight)
         return _linear_combination(loss / n, nll, self.eps)
 
@@ -185,14 +187,24 @@ class MixupSoftmaxLoss(nn.Module):
         label_smooth_eps (float, optional): If larger than zero, use `LabelSmoothedCrossEntropy` instead of `CrossEntropy`. Defaults to 0.
     """
 
-    def __init__(self, class_weights: Optional[torch.Tensor] = None, reduction: str = 'mean', label_smooth_eps: float = 0):
+    def __init__(
+        self,
+        class_weights: Optional[torch.Tensor] = None,
+        reduction: str = "mean",
+        label_smooth_eps: float = 0,
+        poly1_eps: float = 0,
+    ):
         super().__init__()
         # setattr(self.crit, 'reduction', 'none')
         self.reduction = reduction
         self.weight = class_weights
-        # self.label_smooth_eps = label_smooth_eps
-        if label_smooth_eps:
+        assert not (
+            (label_smooth_eps > 0) and (poly1_eps != 0)
+        ), "You cannot set both `label_smooth_eps` and `poly1_eps` to non-default values!"
+        if label_smooth_eps > 0:
             self.loss_fn: Callable = LabelSmoothCrossEntropy(eps=label_smooth_eps)
+        elif poly1_eps != 0:
+            self.loss_fn = Poly1CrossEntropyLoss(epsilon=poly1_eps, weight=self.weight)
         else:
             self.loss_fn = F.cross_entropy
 
@@ -212,24 +224,24 @@ class MixupSoftmaxLoss(nn.Module):
         Returns:
             torch.Tensor: the result loss
         """
+        if self.weight is not None:
+            self.weight = self.weight.to(output.device)
         weight = self.weight
-        if weight is not None:
-            weight = self.weight.to(output.device)
         if len(target.size()) == 2:
             loss1 = self.loss_fn(output, target[:, 0].long(), weight=weight)
             loss2 = self.loss_fn(output, target[:, 1].long(), weight=weight)
             assert target.size(1) in (3, 4)
             if target.size(1) == 3:
                 lambda_ = target[:, 2]
-                d = (loss1 * lambda_ + loss2 * (1-lambda_)).mean()
+                d = (loss1 * lambda_ + loss2 * (1 - lambda_)).mean()
             else:
                 lamb_1, lamb_2 = target[:, 2], target[:, 3]
                 d = (loss1 * lamb_1 + loss2 * lamb_2).mean()
         else:
             # This handles the cases without MixUp for backward compatibility
             d = self.loss_fn(output, target, weight=weight)
-        if self.reduction == 'mean':
+        if self.reduction == "mean":
             return d.mean()
-        elif self.reduction == 'sum':
+        elif self.reduction == "sum":
             return d.sum()
         return d
