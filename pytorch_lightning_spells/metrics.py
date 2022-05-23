@@ -3,8 +3,8 @@ from typing import Optional, Any
 
 import torch
 import numpy as np
+from torchmetrics import Metric
 from scipy.stats import spearmanr
-from pytorch_lightning.metrics import Metric
 from pytorch_lightning.utilities import rank_zero_warn
 from sklearn.metrics import fbeta_score, roc_auc_score
 from sklearn.exceptions import UndefinedMetricWarning
@@ -67,7 +67,7 @@ class AUC(GlobalMetric):
 
     def compute(self):
         target = torch.cat(self.target, dim=0).cpu().long().numpy()
-        preds = torch.cat(self.preds, dim=0).float().cpu().numpy()
+        preds = torch.nan_to_num(torch.cat(self.preds, dim=0).float().cpu()).numpy()
         if len(preds.shape) > 1:
             preds = 1 - preds[:, 0]
             target = (target != 0).astype(int)

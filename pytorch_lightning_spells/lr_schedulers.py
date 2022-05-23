@@ -8,9 +8,11 @@ from torch.optim.lr_scheduler import _LRScheduler, CosineAnnealingLR
 from torch.optim import Optimizer
 
 __all__ = [
-    "BaseLRScheduler", "LinearLR",
-    "ExponentialLR", "MultiStageScheduler",
-    "CosineAnnealingScheduler"
+    "BaseLRScheduler",
+    "LinearLR",
+    "ExponentialLR",
+    "MultiStageScheduler",
+    "CosineAnnealingScheduler",
 ]
 
 
@@ -32,7 +34,14 @@ class LinearLR(BaseLRScheduler):
     iterations.
     """
 
-    def __init__(self, optimizer: torch.optim.Optimizer, min_lr_ratio: float, total_epochs: float, upward: bool=True, last_epoch: int=-1):
+    def __init__(
+        self,
+        optimizer: torch.optim.Optimizer,
+        min_lr_ratio: float,
+        total_epochs: float,
+        upward: bool = True,
+        last_epoch: int = -1,
+    ):
         """Initialize a scheduler.
 
         Args:
@@ -45,7 +54,7 @@ class LinearLR(BaseLRScheduler):
         assert min_lr_ratio < 1
         self.upward = upward
         self.min_lr_ratio = min_lr_ratio
-        self.total_epochs = total_epochs - 1  # starts at zero
+        self.total_epochs = total_epochs - 1  # starts from zero
         super(LinearLR, self).__init__(optimizer, last_epoch)
 
     def get_lr(self):
@@ -53,9 +62,9 @@ class LinearLR(BaseLRScheduler):
         if self.upward:
             progress = 1 - current_epoch / self.total_epochs  # 1 to 0
         else:
-            progress = current_epoch / self.total_epochs  # 1 to 0
+            progress = current_epoch / self.total_epochs  # 0 to 1
         # safety measure
-        progress = max(min(progress, 1.), 0.)
+        progress = max(min(progress, 1.0), 0.0)
         return [
             base_lr - progress * (base_lr - self.min_lr_ratio * base_lr)
             for base_lr in self.base_lrs
@@ -94,10 +103,11 @@ class ExponentialLR(BaseLRScheduler):
 
 
 class MultiStageScheduler(_LRScheduler):
-    def __init__(self, schedulers: Sequence, start_at_epochs: Sequence[int], last_epoch: int = -1):
+    def __init__(
+        self, schedulers: Sequence, start_at_epochs: Sequence[int], last_epoch: int = -1
+    ):
         assert len(schedulers) == len(start_at_epochs)
-        schedulers, start_at_epochs = (
-            np.array(schedulers), np.array(start_at_epochs))
+        schedulers, start_at_epochs = (np.array(schedulers), np.array(start_at_epochs))
         # sort starting epochs in descending order
         idx = np.flip(np.argsort(start_at_epochs))
         self.schedulers = schedulers[idx]
@@ -127,3 +137,31 @@ class MultiStageScheduler(_LRScheduler):
         for scheduler in self.schedulers:
             scheduler.optimizer = None
         self.optimizer = None
+
+    def state_dict(self):
+        """Returns the state of the scheduler as a :class:`dict`.
+
+        It contains an entry for every variable in self.__dict__ which
+        is not the optimizer.
+        """
+        results = {
+            key: value for key, value in self.__dict__.items() if key != "optimizer"
+        }
+        del results["schedulers"]
+        for i, scheduler in enumerate(self.schedulers):
+            results["schedulers_" + str(i)] = scheduler.state_dict()
+        return results
+
+    def load_state_dict(self, state_dict):
+        """Loads the schedulers state.
+
+        Args:
+            state_dict (dict): scheduler state. Should be an object returned
+                from a call to :meth:`state_dict`.
+        """
+        for i, scheduler in enumerate(self.schedulers):
+            scheduler.load_state_dict(state_dict["schedulers_" + str(i)])
+            del state_dict["schedulers_" + str(i)]
+        self.__dict__.update(state_dict)
+        # Manually bind optimizer to make sure
+        self.switch_optimizer(self.optimizer)
