@@ -28,9 +28,9 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords=['deep learning', 'pytorch', 'AI'],
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     setup_requires=[],
-    install_requires=["pytorch_lightning>=1.5.0, <1.8.0", "torchmetrics>=0.7.0, <0.9.0", "scipy", "scikit-learn"],
+    install_requires=["pytorch_lightning>=1.5.0, <1.8.0", "torchmetrics>=0.8.0, <0.9.0", "scipy", "scikit-learn"],
     extras_require={},
     classifiers=[
         'Environment :: Console',

@@ -49,8 +49,8 @@ class AUC(GlobalMetric):
     **Binary mode**
 
     >>> auc = AUC()
-    >>> auc(torch.tensor([0.3, 0.8, 0.2]), torch.tensor([0, 1, 0]))
-    >>> auc(torch.tensor([0.3, 0.3, 0.9]), torch.tensor([1, 1, 0]))
+    >>> _ = auc(torch.tensor([0.3, 0.8, 0.2]), torch.tensor([0, 1, 0]))
+    >>> _ = auc(torch.tensor([0.3, 0.3, 0.9]), torch.tensor([1, 1, 0]))
     >>> round(auc.compute().item(), 2)
     0.56
 
@@ -59,8 +59,8 @@ class AUC(GlobalMetric):
     This will use the first column as the negative case, and the rest collectively as the positive case.
 
     >>> auc = AUC()
-    >>> auc(torch.tensor([[0.3, 0.8, 0.2], [0.2, 0.1, 0.1], [0.5, 0.1, 0.7]]).t(), torch.tensor([0, 1, 0]))
-    >>> auc(torch.tensor([[0.3, 0.3, 0.8], [0.2, 0.6, 0.1], [0.5, 0.1, 0.1]]).t(), torch.tensor([1, 1, 0]))
+    >>> _ = auc(torch.tensor([[0.3, 0.8, 0.2], [0.2, 0.1, 0.1], [0.5, 0.1, 0.7]]).t(), torch.tensor([0, 1, 0]))
+    >>> _ = auc(torch.tensor([[0.3, 0.3, 0.8], [0.2, 0.6, 0.1], [0.5, 0.1, 0.1]]).t(), torch.tensor([1, 1, 0]))
     >>> round(auc.compute().item(), 2)
     0.39
     """
@@ -109,8 +109,8 @@ class FBeta(GlobalMetric):
     **Binary mode**
 
     >>> fbeta = FBeta()
-    >>> fbeta(torch.tensor([0.3, 0.8, 0.2]), torch.tensor([0, 1, 0]))
-    >>> fbeta(torch.tensor([0.3, 0.3, 0.9]), torch.tensor([1, 1, 0]))
+    >>> _ = fbeta(torch.tensor([0.3, 0.8, 0.2]), torch.tensor([0, 1, 0]))
+    >>> _ = fbeta(torch.tensor([0.3, 0.3, 0.9]), torch.tensor([1, 1, 0]))
     >>> round(fbeta.compute().item(), 2)
     0.88
 
@@ -119,8 +119,8 @@ class FBeta(GlobalMetric):
     This will use the first column as the negative case, and the rest collectively as the positive case.
 
     >>> fbeta = FBeta()
-    >>> fbeta(torch.tensor([[0.8, 0.3, 0.7], [0.1, 0.1, 0.1], [0.1, 0.6, 0.2]]).t(), torch.tensor([0, 1, 0]))
-    >>> fbeta(torch.tensor([[0.3, 0.7, 0.8], [0.2, 0.2, 0.1], [0.5, 0.1, 0.1]]).t(), torch.tensor([1, 1, 0]))
+    >>> _ = fbeta(torch.tensor([[0.8, 0.3, 0.7], [0.1, 0.1, 0.1], [0.1, 0.6, 0.2]]).t(), torch.tensor([0, 1, 0]))
+    >>> _ = fbeta(torch.tensor([[0.3, 0.7, 0.8], [0.2, 0.2, 0.1], [0.5, 0.1, 0.1]]).t(), torch.tensor([1, 1, 0]))
     >>> round(fbeta.compute().item(), 4)
     0.9375
     """
