@@ -97,9 +97,10 @@ class BaseModule(pl.LightningModule):
         loss = outputs["loss"].mean()
         self.train_loss_tracker.update(loss.detach())
         if self._should_log(outputs["log"]):
-            self.logger.log_metrics({
-                "train_loss": self.train_loss_tracker.value
-            }, step=self.global_step)
+            for logger in self.loggers
+                logger.log_metrics({
+                    "train_loss": self.train_loss_tracker.value
+                }, step=self.global_step)
         return loss
 
     def validation_step_end(self, outputs):
