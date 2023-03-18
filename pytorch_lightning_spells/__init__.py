@@ -97,7 +97,7 @@ class BaseModule(pl.LightningModule):
         loss = outputs["loss"].mean()
         self.train_loss_tracker.update(loss.detach())
         if self._should_log(outputs["log"]):
-            for logger in self.loggers
+            for logger in self.loggers:
                 logger.log_metrics({
                     "train_loss": self.train_loss_tracker.value
                 }, step=self.global_step)
