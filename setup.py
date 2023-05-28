@@ -30,7 +30,7 @@ setup(
     keywords=['deep learning', 'pytorch', 'AI'],
     python_requires='>=3.8',
     setup_requires=[],
-    install_requires=["pytorch_lightning>=1.5.0, <1.8.0", "torchmetrics>=0.8.0, <0.9.0", "scipy", "scikit-learn"],
+    install_requires=["pytorch_lightning>=2.0.0, <2.1.0", "torchmetrics>=0.11.0, <0.12.0", "scipy", "scikit-learn"],
     extras_require={},
     classifiers=[
         'Environment :: Console',
