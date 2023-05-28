@@ -7,8 +7,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks.base import Callback
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 # from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from .cutmix_utils import cutmix_bbox_and_lam, rand_bbox, rand_bbox_minmax

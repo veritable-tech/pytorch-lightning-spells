@@ -79,6 +79,7 @@ class BaseModule(pl.LightningModule):
         return False
 
     def training_step_end(self, outputs):
+        # TODO: merge this into `train_step()` as DP is no longer supported
         """This method logs the training loss for you.
 
         It follows the `log_every_n_steps` attribute of the associated Trainer.
@@ -104,6 +105,7 @@ class BaseModule(pl.LightningModule):
         return loss
 
     def validation_step_end(self, outputs):
+        # TODO: merge this into `validation_step()` as DP is no longer supported
         """This method logs the validation loss and metrics for you.
 
         The output from `.validation_step()` method must contains these three entries:
@@ -128,6 +130,7 @@ class BaseModule(pl.LightningModule):
         return self.validation_step(batch, batch_idx)
 
     def test_step_end(self, outputs):
+        # TODO: merge this into `test_step()` as DP is no longer supported
         """Basically the same as `.validation_step_ends()` method, but with a different prefix.
         """
         # TODO: refactor to be able to simply defer to `.validation_step_ends()`?
