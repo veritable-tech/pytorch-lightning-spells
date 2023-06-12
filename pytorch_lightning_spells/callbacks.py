@@ -38,14 +38,15 @@ class RandomAugmentationChoiceCallback(Callback):
     def get_callback(self):
         return np.random.choice(self.callbacks, p=self.p)
 
-    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
+    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
         self.step += 1
         if self.no_op_warmup >= self.step:
             return
         if self.no_op_prob and np.random.random() < self.no_op_prob:
             return
         self.get_callback().on_train_batch_start(
-            trainer, pl_module, batch, batch_idx, dataloader_idx)
+            trainer, pl_module, batch, batch_idx
+        )
 
 
 class SnapMixCallback(Callback):
@@ -71,7 +72,7 @@ class SnapMixCallback(Callback):
         self.cutmix_bbox = cutmix_bbox
         assert softmax_target, "SnapMix only support softmax_target=True"
 
-    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
+    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
         old_batch = batch
         batch, targets = batch
         target_activation_map = get_spm(
@@ -152,7 +153,7 @@ class CutMixCallback(Callback):
         self.softmax_target = softmax_target
         self.minmax = minmax
 
-    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
+    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
         old_batch = batch
         batch, targets = batch
         batch_flipped = batch.flip(0).clone()
@@ -196,7 +197,7 @@ class MixUpCallback(Callback):
         self.alpha = alpha
         self.softmax_target = softmax_target
 
-    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
+    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
         old_batch = batch
         batch, targets = batch
         batch_flipped = batch.flip(0).clone()
@@ -332,9 +333,10 @@ class LookaheadModelCheckpoint(ModelCheckpoint):
             if hasattr(optimizer, "_backup_and_load_cache"):
                 print("load slow parameters")
                 optimizer._backup_and_load_cache()
+        super().on_validation_start(trainer, pl_module)
 
     def on_validation_end(self, trainer, pl_module):
-        self.save_checkpoint(trainer)
+        super().on_validation_end(trainer, pl_module)
         for optimizer in trainer.optimizers:
             if hasattr(optimizer, "_clear_and_load_backup"):
                 print("load fast parameters")
