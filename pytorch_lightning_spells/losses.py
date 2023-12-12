@@ -124,7 +124,10 @@ class Poly1FocalLoss(nn.Module):
         labels = labels.to(device=logits.device, dtype=logits.dtype)
 
         ce_loss = F.binary_cross_entropy_with_logits(
-            input=logits, target=labels, reduction="none", weight=self.weight
+            input=logits,
+            target=labels,
+            reduction="none",
+            weight=self.weight.to(logits.device) if self.weight is not None else None
         )
         pt = labels * p + (1 - labels) * (1 - p)
         FL = ce_loss * ((1 - pt) ** self.gamma)
