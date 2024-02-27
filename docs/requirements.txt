@@ -1,1 +1,2 @@
 autodocsumm==0.2.12
+sphinx-rtd-theme
