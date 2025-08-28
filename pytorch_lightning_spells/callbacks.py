@@ -285,16 +285,16 @@ class LookaheadCallback(Callback):
     """Switch to the slow weights before evaluation and switch back after."""
 
     def on_validation_start(self, trainer, pl_module):
-        optimizer = trainer.optimizers(use_pl_optimizer=False)
-        if hasattr(optimizer, "_backup_and_load_cache"):
-            print("load slow parameters")
-            optimizer._backup_and_load_cache()
+        for optimizer in trainer.optimizers:
+            if hasattr(optimizer, "_backup_and_load_cache"):
+                print("load slow parameters")
+                optimizer._backup_and_load_cache()
 
     def on_validation_end(self, trainer, pl_module):
-        optimizer = trainer.optimizers(use_pl_optimizer=False)
-        if hasattr(optimizer, "_clear_and_load_backup"):
-            print("load fast parameters")
-            optimizer._clear_and_load_backup()
+        for optimizer in trainer.optimizers:
+            if hasattr(optimizer, "_clear_and_load_backup"):
+                print("load fast parameters")
+                optimizer._clear_and_load_backup()
 
 
 class LookaheadModelCheckpoint(ModelCheckpoint):
