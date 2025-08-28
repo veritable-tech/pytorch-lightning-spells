@@ -1,4 +1,6 @@
 import socket
+import random
+import asyncio
 from copy import deepcopy
 from datetime import datetime
 from typing import Optional, Sequence, Tuple
@@ -12,6 +14,7 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .cutmix_utils import cutmix_bbox_and_lam, rand_bbox, rand_bbox_minmax
 from .snapmix_utils import get_spm
+from .optimizers import Lookahead
 
 
 class RandomAugmentationChoiceCallback(Callback):
@@ -21,23 +24,21 @@ class RandomAugmentationChoiceCallback(Callback):
 
     Args:
         callbacks (Sequence[Callback]): A sequence of calbacks to choose from.
-        p (Sequence[Callback]): A sequence of probabilities for the callbacks.
+        p (Sequence[float]): A sequence of probabilities for the callbacks.
         no_op_warmup (int, optional): the number of initial steps that should not have any augmentation. Defaults to 0.
         no_op_prob (float, optional): the probability of a step that has no augmentation. Defaults to 0.
     """
 
-    def __init__(
-        self, callbacks: Sequence[Callback], p: Sequence[Callback], no_op_warmup: int = 0, no_op_prob: float = 0
-    ):
+    def __init__(self, callbacks: Sequence[Callback], p: Sequence[float], no_op_warmup: int = 0, no_op_prob: float = 0):
         self.p = np.asarray(p) / np.sum(p)
-        self.callbacks = callbacks
+        self.callbacks = list(callbacks)
         self.no_op_warmup = no_op_warmup
         self.step = 0
         self.no_op_prob = no_op_prob
         assert len(p) == len(callbacks)
 
     def get_callback(self):
-        return np.random.choice(self.callbacks, p=self.p)
+        return random.choices(self.callbacks, weights=self.p, k=1)[0]
 
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
         self.step += 1
@@ -232,8 +233,8 @@ class TelegramCallback(Callback):
         except ImportError:
             raise ImportError("Please install 'python-telegram-bot' before using TelegramCallback.")
         try:
-            self.telegram_bot.send_message(chat_id=self.chat_id, text=text)
-        except telegram.error.TimeOut:
+            asyncio.run(self.telegram_bot.send_message(chat_id=self.chat_id, text=text))
+        except telegram.error.TimedOut:
             # Ignore timeouts and continue training
             pass
 
@@ -285,16 +286,18 @@ class LookaheadCallback(Callback):
     """Switch to the slow weights before evaluation and switch back after."""
 
     def on_validation_start(self, trainer, pl_module):
-        optimizer = trainer.optimizers(use_pl_optimizer=False)
-        if hasattr(optimizer, "_backup_and_load_cache"):
-            print("load slow parameters")
-            optimizer._backup_and_load_cache()
+        for optimizer in trainer.optimizers:
+            assert isinstance(optimizer, Lookahead), f"Optimizer {optimizer} is not a Lookahead optimizer"
+            if hasattr(optimizer, "_backup_and_load_cache"):
+                print("load slow parameters")
+                optimizer._backup_and_load_cache()
 
     def on_validation_end(self, trainer, pl_module):
-        optimizer = trainer.optimizers(use_pl_optimizer=False)
-        if hasattr(optimizer, "_clear_and_load_backup"):
-            print("load fast parameters")
-            optimizer._clear_and_load_backup()
+        for optimizer in trainer.optimizers:
+            assert isinstance(optimizer, Lookahead), f"Optimizer {optimizer} is not a Lookahead optimizer"
+            if hasattr(optimizer, "_clear_and_load_backup"):
+                print("load fast parameters")
+                optimizer._clear_and_load_backup()
 
 
 class LookaheadModelCheckpoint(ModelCheckpoint):
@@ -302,6 +305,7 @@ class LookaheadModelCheckpoint(ModelCheckpoint):
 
     def on_validation_start(self, trainer, pl_module):
         for optimizer in trainer.optimizers:
+            assert isinstance(optimizer, Lookahead), f"Optimizer {optimizer} is not a Lookahead optimizer"
             if hasattr(optimizer, "_backup_and_load_cache"):
                 print("load slow parameters")
                 optimizer._backup_and_load_cache()
@@ -310,6 +314,7 @@ class LookaheadModelCheckpoint(ModelCheckpoint):
     def on_validation_end(self, trainer, pl_module):
         super().on_validation_end(trainer, pl_module)
         for optimizer in trainer.optimizers:
+            assert isinstance(optimizer, Lookahead), f"Optimizer {optimizer} is not a Lookahead optimizer"
             if hasattr(optimizer, "_clear_and_load_backup"):
                 print("load fast parameters")
                 optimizer._clear_and_load_backup()

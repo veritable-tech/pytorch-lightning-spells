@@ -1,11 +1,8 @@
-import weakref
-from functools import wraps
-from typing import Sequence, Union
+from typing import Sequence
 
 import torch
 import numpy as np
 from torch.optim.lr_scheduler import _LRScheduler, CosineAnnealingLR
-from torch.optim import Optimizer
 
 __all__ = [
     "BaseLRScheduler",

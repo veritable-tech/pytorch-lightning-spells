@@ -10,6 +10,23 @@ from . import metrics
 from . import samplers
 from .version import __version__, __docs__, __author__, __author_email__, __license__
 
+__all__ = [
+    "callbacks",
+    "loggers",
+    "losses",
+    "optimizers",
+    "utils",
+    "lr_schedulers",
+    "metrics",
+    "samplers",
+    "__version__",
+    "__docs__",
+    "__author__",
+    "__author_email__",
+    "__license__",
+    "BaseModule",
+]
+
 
 class BaseModule(pl.LightningModule):
     """A boilerplate module with some sensible defaults.
