@@ -14,6 +14,7 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 
 from .cutmix_utils import cutmix_bbox_and_lam, rand_bbox, rand_bbox_minmax
 from .snapmix_utils import get_spm
+from .optimizers import Lookahead
 
 
 class RandomAugmentationChoiceCallback(Callback):
@@ -286,12 +287,14 @@ class LookaheadCallback(Callback):
 
     def on_validation_start(self, trainer, pl_module):
         for optimizer in trainer.optimizers:
+            assert isinstance(optimizer, Lookahead), f"Optimizer {optimizer} is not a Lookahead optimizer"
             if hasattr(optimizer, "_backup_and_load_cache"):
                 print("load slow parameters")
                 optimizer._backup_and_load_cache()
 
     def on_validation_end(self, trainer, pl_module):
         for optimizer in trainer.optimizers:
+            assert isinstance(optimizer, Lookahead), f"Optimizer {optimizer} is not a Lookahead optimizer"
             if hasattr(optimizer, "_clear_and_load_backup"):
                 print("load fast parameters")
                 optimizer._clear_and_load_backup()
@@ -302,6 +305,7 @@ class LookaheadModelCheckpoint(ModelCheckpoint):
 
     def on_validation_start(self, trainer, pl_module):
         for optimizer in trainer.optimizers:
+            assert isinstance(optimizer, Lookahead), f"Optimizer {optimizer} is not a Lookahead optimizer"
             if hasattr(optimizer, "_backup_and_load_cache"):
                 print("load slow parameters")
                 optimizer._backup_and_load_cache()
@@ -310,6 +314,7 @@ class LookaheadModelCheckpoint(ModelCheckpoint):
     def on_validation_end(self, trainer, pl_module):
         super().on_validation_end(trainer, pl_module)
         for optimizer in trainer.optimizers:
+            assert isinstance(optimizer, Lookahead), f"Optimizer {optimizer} is not a Lookahead optimizer"
             if hasattr(optimizer, "_clear_and_load_backup"):
                 print("load fast parameters")
                 optimizer._clear_and_load_backup()
