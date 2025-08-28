@@ -23,7 +23,9 @@ class GlobalMetric(Metric):
         self.add_state("preds", default=[], dist_reduce_fx=None)
         self.add_state("target", default=[], dist_reduce_fx=None)
 
-        rank_zero_warn("This Metric will save all targets and predictions in buffer. For large datasets this may lead to large memory footprint.")
+        rank_zero_warn(
+            "This Metric will save all targets and predictions in buffer. For large datasets this may lead to large memory footprint."
+        )
 
     def update(self, preds: torch.Tensor, target: torch.Tensor):
         """

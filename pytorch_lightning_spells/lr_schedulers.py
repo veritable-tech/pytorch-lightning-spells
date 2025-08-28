@@ -65,10 +65,7 @@ class LinearLR(BaseLRScheduler):
             progress = current_epoch / self.total_epochs  # 0 to 1
         # safety measure
         progress = max(min(progress, 1.0), 0.0)
-        return [
-            base_lr - progress * (base_lr - self.min_lr_ratio * base_lr)
-            for base_lr in self.base_lrs
-        ]
+        return [base_lr - progress * (base_lr - self.min_lr_ratio * base_lr) for base_lr in self.base_lrs]
 
 
 class ExponentialLR(BaseLRScheduler):
@@ -103,9 +100,7 @@ class ExponentialLR(BaseLRScheduler):
 
 
 class MultiStageScheduler(_LRScheduler):
-    def __init__(
-        self, schedulers: Sequence, start_at_epochs: Sequence[int], last_epoch: int = -1
-    ):
+    def __init__(self, schedulers: Sequence, start_at_epochs: Sequence[int], last_epoch: int = -1):
         assert len(schedulers) == len(start_at_epochs)
         schedulers, start_at_epochs = (np.array(schedulers), np.array(start_at_epochs))
         # sort starting epochs in descending order
@@ -144,9 +139,7 @@ class MultiStageScheduler(_LRScheduler):
         It contains an entry for every variable in self.__dict__ which
         is not the optimizer.
         """
-        results = {
-            key: value for key, value in self.__dict__.items() if key != "optimizer"
-        }
+        results = {key: value for key, value in self.__dict__.items() if key != "optimizer"}
         del results["schedulers"]
         for i, scheduler in enumerate(self.schedulers):
             results["schedulers_" + str(i)] = scheduler.state_dict()
