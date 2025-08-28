@@ -199,9 +199,9 @@ def separate_parameters(
         10.0
         >>> decay, no_decay = separate_parameters(model) # separate the parameters
         >>> np.sum([x.sum().detach().numpy() for x in decay]) # nn.Linear
-        2000.0
+        np.float32(2000.0)
         >>> np.sum([x.sum().detach().numpy() for x in no_decay]) # nn.BatchNorm1d
-        30.0
+        np.float32(30.0)
         >>> optimizer = torch.optim.AdamW([{
         ...    "params": decay, "weight_decay": 0.1
         ... }, {
