@@ -1,0 +1,31 @@
+# See https://pre-commit.com/ for usage and config
+exclude: '(\.html)|(\.ipynb)'
+default_stages: [pre-commit]
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.2.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.12.10
+    hooks:
+    # Run the linter.
+    - id: ruff
+      args: [
+          --fix,
+          # Avoid running on notebooks
+          --exclude,
+          "jupyter_notebook_config.py,jupyter_server_config.py,prescription_pb2.py,**/notebooks/*.py",
+          # Supported rules and their codes: https://docs.astral.sh/ruff/rules/
+          --ignore,
+          "F704",
+          --select,
+          "E9,F63,F7,F82",
+        ]
+    # Run the formatter.
+    - id: ruff-format
+      args: [--line-length=120]
