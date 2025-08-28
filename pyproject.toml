@@ -15,6 +15,9 @@ dev = [
     "pytest>=8.4.1",
     "pytest-env>=1.1.5",
 ]
+telegram = [
+    "python-telegram-bot>=22.3",
+]
 
 [build-system]
 requires = ["hatchling"]
