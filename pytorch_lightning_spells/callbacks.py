@@ -1,4 +1,6 @@
 import socket
+import random
+import asyncio
 from copy import deepcopy
 from datetime import datetime
 from typing import Optional, Sequence, Tuple
@@ -21,23 +23,21 @@ class RandomAugmentationChoiceCallback(Callback):
 
     Args:
         callbacks (Sequence[Callback]): A sequence of calbacks to choose from.
-        p (Sequence[Callback]): A sequence of probabilities for the callbacks.
+        p (Sequence[float]): A sequence of probabilities for the callbacks.
         no_op_warmup (int, optional): the number of initial steps that should not have any augmentation. Defaults to 0.
         no_op_prob (float, optional): the probability of a step that has no augmentation. Defaults to 0.
     """
 
-    def __init__(
-        self, callbacks: Sequence[Callback], p: Sequence[Callback], no_op_warmup: int = 0, no_op_prob: float = 0
-    ):
+    def __init__(self, callbacks: Sequence[Callback], p: Sequence[float], no_op_warmup: int = 0, no_op_prob: float = 0):
         self.p = np.asarray(p) / np.sum(p)
-        self.callbacks = callbacks
+        self.callbacks = list(callbacks)
         self.no_op_warmup = no_op_warmup
         self.step = 0
         self.no_op_prob = no_op_prob
         assert len(p) == len(callbacks)
 
     def get_callback(self):
-        return np.random.choice(self.callbacks, p=self.p)
+        return random.choices(self.callbacks, weights=self.p, k=1)[0]
 
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
         self.step += 1
@@ -232,8 +232,8 @@ class TelegramCallback(Callback):
         except ImportError:
             raise ImportError("Please install 'python-telegram-bot' before using TelegramCallback.")
         try:
-            self.telegram_bot.send_message(chat_id=self.chat_id, text=text)
-        except telegram.error.TimeOut:
+            asyncio.run(self.telegram_bot.send_message(chat_id=self.chat_id, text=text))
+        except telegram.error.TimedOut:
             # Ignore timeouts and continue training
             pass
 
