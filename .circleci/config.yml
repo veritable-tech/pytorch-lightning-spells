@@ -8,6 +8,8 @@ executors:
 
 jobs:
   core-tests:
+    retention:
+      caches: 3d
     executor: python-executor
     working_directory: ~/repo
     environment:
