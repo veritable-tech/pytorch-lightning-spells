@@ -104,10 +104,10 @@ def _apply_leaf(m, f):
         f(m)
         if isinstance(m, torch.nn.Parameter):
             return
-    c = _children(m)
-    if len(c) > 0:
-        for l in c:
-            _apply_leaf(l, f)
+    children = _children(m)
+    if len(children) > 0:
+        for layer in children:
+            _apply_leaf(layer, f)
 
 
 def set_trainable(layer: Layer, trainable: bool):
