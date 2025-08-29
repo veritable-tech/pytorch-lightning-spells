@@ -48,7 +48,6 @@ jobs:
       - save_cache:
           paths:
             - /tmp/.uv-cache
-            - ~/repo/.venv
           key: v1-dependencies-{{ checksum "uv.lock" }}
 
 workflows:
