@@ -19,9 +19,9 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - uv-v1-dependencies-{{ checksum "uv.lock" }}
+            - v1-dependencies-{{ checksum "uv.lock" }}
             # fallback to using the latest cache if no exact match is found
-            - uv-v1-dependencies-
+            - v1-dependencies-
       - run:
           name: Install uv
           command: curl -LsSf https://astral.sh/uv/install.sh | sh
