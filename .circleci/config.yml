@@ -4,13 +4,14 @@ executors:
   python-executor:
     docker:
       - image: cimg/python:3.11
+    resource_class: small
 
 jobs:
   core-tests:
     executor: python-executor
     working_directory: ~/repo
     environment:
-      XDG_BIN_HOME: /uv/bin
+      XDG_BIN_HOME: /home/circleci/uv/bin
       UV_CACHE_DIR: /tmp/.uv-cache
     steps:
       - checkout:
