@@ -28,11 +28,6 @@ jobs:
       - run:
           name: Install dependencies
           command: uv sync --frozen
-      - save_cache:
-          paths:
-            - /tmp/.uv-cache
-            - ~/repo/.venv
-          key: v1-dependencies-{{ checksum "uv.lock" }}
       - run:
           name: "Are we on test mode?"
           command: echo ${TEST_MODE} # prints: XXXXXXX
@@ -45,6 +40,14 @@ jobs:
       - store_artifacts:
           path: test-reports
           destination: test-reports
+      - run:
+          name: Prune Cache
+          command: uv cache prune --ci
+      - save_cache:
+          paths:
+            - /tmp/.uv-cache
+            - ~/repo/.venv
+          key: v1-dependencies-{{ checksum "uv.lock" }}
 
 workflows:
   version: 2
