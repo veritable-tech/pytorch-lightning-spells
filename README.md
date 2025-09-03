@@ -6,21 +6,28 @@ Some useful plugins for [PyTorch Lightning](https://github.com/PyTorchLightning/
 
 [Documentation](https://pytorch-lightning-spells.readthedocs.io/)
 
-**IMPORTANT NOTICE**: There is ongoing work to make this package fully compatible with PyTorch Lightning version 2.1. Submitting issues and pull requests for compatibility with this version is highly appreciated.
-
-Support for older versions of PyTorch Lightning:
-
-- Please install [version 0.1.0](https://pypi.org/project/pytorch-lightning-spells/0.1.0/) if you are working with PyTorch Lightning version 2.1.
-- Please install [version 0.0.5](https://pypi.org/project/pytorch-lightning-spells/0.0.5/) if you are working with PyTorch Lightning version 1.3 or 1.4.
-
 ## Installation
+
+### PIP
 
 ```bash
 pip install pytorch-lightning-spells
 ```
 
-or the latest in the main branch:
+or the latest code in the main branch:
 
 ```bash
-pip install https://github.com/veritable-tech/pytorch-lightning-spells/archive/master.zip
+pip install https://github.com/veritable-tech/pytorch-lightning-spells/archive/main.zip
+```
+
+### UV
+
+```bash
+uv add pytorch-lightning-spells
+```
+
+or the latest code in the main branch:
+
+```bash
+uv add git+https://github.com/veritable-tech/pytorch-lightning-spells.git@main
 ```
