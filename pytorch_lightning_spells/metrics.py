@@ -13,12 +13,10 @@ from sklearn.exceptions import UndefinedMetricWarning
 class GlobalMetric(Metric):
     def __init__(
         self,
-        compute_on_step: bool = False,
         dist_sync_on_step: bool = False,
         process_group: Optional[Any] = None,
     ):
         super().__init__(
-            compute_on_step=compute_on_step,
             dist_sync_on_step=dist_sync_on_step,
             process_group=process_group,
         )
@@ -26,8 +24,7 @@ class GlobalMetric(Metric):
         self.add_state("target", default=[], dist_reduce_fx=None)
 
         rank_zero_warn(
-            "This Metric will save all targets and predictions in buffer."
-            " For large datasets this may lead to large memory footprint."
+            "This Metric will save all targets and predictions in buffer. For large datasets this may lead to large memory footprint."
         )
 
     def update(self, preds: torch.Tensor, target: torch.Tensor):
@@ -85,7 +82,6 @@ class SpearmanCorrelation(GlobalMetric):
         process_group: Optional[Any] = None,
     ):
         super().__init__(
-            compute_on_step=compute_on_step,
             dist_sync_on_step=dist_sync_on_step,
             process_group=process_group,
         )
@@ -134,7 +130,6 @@ class FBeta(GlobalMetric):
         process_group: Optional[Any] = None,
     ):
         super().__init__(
-            compute_on_step=compute_on_step,
             dist_sync_on_step=dist_sync_on_step,
             process_group=process_group,
         )

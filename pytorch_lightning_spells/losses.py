@@ -14,12 +14,7 @@ class Poly1CrossEntropyLoss(nn.Module):
     Reference: `PolyLoss: A Polynomial Expansion Perspective of Classification Loss Functions <http://arxiv.org/abs/2204.12511>`_.
     """
 
-    def __init__(
-        self,
-        epsilon: float = 1.0,
-        reduction: str = "none",
-        weight: Optional[Tensor] = None
-    ):
+    def __init__(self, epsilon: float = 1.0, reduction: str = "none", weight: Optional[Tensor] = None):
         """
         Create instance of Poly1CrossEntropyLoss
         :param num_classes:
@@ -44,9 +39,7 @@ class Poly1CrossEntropyLoss(nn.Module):
             self.weight = self.weight.to(labels.device)
             probs = probs * self.weight.unsqueeze(0) / self.weight.mean()
         pt = torch.gather(probs, -1, labels.unsqueeze(1))[:, 0]
-        CE = F.cross_entropy(
-            input=logits, target=labels, reduction="none", weight=self.weight
-        )
+        CE = F.cross_entropy(input=logits, target=labels, reduction="none", weight=self.weight)
         poly1 = CE + self.epsilon * (1 - pt)
         if self.reduction == "mean":
             poly1 = poly1.mean()
@@ -115,11 +108,7 @@ class Poly1FocalLoss(nn.Module):
             # if labels are of shape [N, ...] e.g. segmentation task
             # convert to one-hot tensor of shape [N, num_classes, ...]
             else:
-                labels = (
-                    F.one_hot(labels.unsqueeze(1), self.num_classes)
-                    .transpose(1, -1)
-                    .squeeze_(-1)
-                )
+                labels = F.one_hot(labels.unsqueeze(1), self.num_classes).transpose(1, -1).squeeze_(-1)
 
         labels = labels.to(device=logits.device, dtype=logits.dtype)
 
@@ -127,7 +116,7 @@ class Poly1FocalLoss(nn.Module):
             input=logits,
             target=labels,
             reduction="none",
-            weight=self.weight.to(logits.device) if self.weight is not None else None
+            weight=self.weight.to(logits.device) if self.weight is not None else None,
         )
         pt = labels * p + (1 - labels) * (1 - p)
         FL = ce_loss * ((1 - pt) ** self.gamma)
@@ -201,9 +190,9 @@ class MixupSoftmaxLoss(nn.Module):
         # setattr(self.crit, 'reduction', 'none')
         self.reduction = reduction
         self.weight = class_weights
-        assert not (
-            (label_smooth_eps > 0) and (poly1_eps != 0)
-        ), "You cannot set both `label_smooth_eps` and `poly1_eps` to non-default values!"
+        assert not ((label_smooth_eps > 0) and (poly1_eps != 0)), (
+            "You cannot set both `label_smooth_eps` and `poly1_eps` to non-default values!"
+        )
         if label_smooth_eps > 0:
             self.loss_fn: Callable = LabelSmoothCrossEntropy(eps=label_smooth_eps)
         elif poly1_eps != 0:

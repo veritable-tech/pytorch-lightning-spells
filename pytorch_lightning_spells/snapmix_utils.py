@@ -2,6 +2,7 @@
 
 Reference: `Shaoli-Huang/SnapMix <https://github.com/Shaoli-Huang/SnapMix/>`_
 """
+
 import torch
 import torch.nn.functional as F
 
@@ -25,9 +26,7 @@ def get_spm(input_tensor, target, model, image_size, half: bool = False):
 
         target_activation_map = torch.stack(tmp)
         target_activation_map = target_activation_map.unsqueeze(1)
-        target_activation_map = F.interpolate(
-            target_activation_map, image_size,
-            mode='bilinear', align_corners=False)
+        target_activation_map = F.interpolate(target_activation_map, image_size, mode="bilinear", align_corners=False)
 
         target_activation_map = target_activation_map.squeeze(1)
 

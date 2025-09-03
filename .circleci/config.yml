@@ -1,48 +1,57 @@
-# Python CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-python/ for more details
-#
-version: 2
-jobs:
-  build:
+version: 2.1
+
+executors:
+  python-executor:
     docker:
-      # specify the version you desire here
-      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
-      - image: ceshine/miniconda:3.10
+      - image: cimg/python:3.11
+    resource_class: small
 
+jobs:
+  core-tests:
+    retention:
+      caches: 3d
+    executor: python-executor
     working_directory: ~/repo
-
+    environment:
+      XDG_BIN_HOME: /home/circleci/uv/bin
+      UV_CACHE_DIR: /tmp/.uv-cache
     steps:
-      - checkout
-
+      - checkout:
+          path: ~/repo
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "setup.py" }}
+            - v1-dependencies-{{ checksum "uv.lock" }}
             # fallback to using the latest cache if no exact match is found
             - v1-dependencies-
-
       - run:
-          name: install dependencies
-          command: |
-            conda install -y pytorch torchvision torchaudio cpuonly -c pytorch
-            pip install -e .
-            pip install pytest
-
-      - save_cache:
-          paths:
-            - /opt/conda
-          key: v1-dependencies-{{ checksum "setup.py" }}
-
+          name: Install uv
+          command: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - run:
+          name: Install dependencies
+          command: uv sync --frozen --group telegram
       - run:
           name: "Are we on test mode?"
           command: echo ${TEST_MODE} # prints: XXXXXXX
-
       - run:
-          name: run tests
-          command: |
-            pytest --doctest-modules
-
+          name: Run linter
+          command: uvx ruff check .
+      - run:
+          name: Run tests
+          command: uv run pytest
       - store_artifacts:
           path: test-reports
           destination: test-reports
+      - run:
+          name: Prune Cache
+          command: uv cache prune --ci
+      - save_cache:
+          paths:
+            - /tmp/.uv-cache
+          key: v1-dependencies-{{ checksum "uv.lock" }}
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - core-tests

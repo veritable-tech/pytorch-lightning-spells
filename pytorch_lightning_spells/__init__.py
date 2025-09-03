@@ -8,13 +8,24 @@ from . import utils
 from . import lr_schedulers
 from . import metrics
 from . import samplers
-from .version import (
-    __version__,
-    __docs__,
-    __author__,
-    __author_email__,
-    __license__
-)
+from .version import __version__, __docs__, __author__, __author_email__, __license__
+
+__all__ = [
+    "callbacks",
+    "loggers",
+    "losses",
+    "optimizers",
+    "utils",
+    "lr_schedulers",
+    "metrics",
+    "samplers",
+    "__version__",
+    "__docs__",
+    "__author__",
+    "__author_email__",
+    "__license__",
+    "BaseModule",
+]
 
 
 class BaseModule(pl.LightningModule):
@@ -55,8 +66,7 @@ class BaseModule(pl.LightningModule):
         self.train_loss_tracker = utils.EMATracker(ema_alpha)
 
     def get_progress_bar_dict(self):
-        """Removes `v_num` from the progress bar.
-        """
+        """Removes `v_num` from the progress bar."""
         # don't show the experiment version number
         items = super().get_progress_bar_dict()
         items.pop("v_num", None)
@@ -99,9 +109,7 @@ class BaseModule(pl.LightningModule):
         self.train_loss_tracker.update(loss.detach())
         if self._should_log(outputs["log"]):
             for logger in self.loggers:
-                logger.log_metrics({
-                    "train_loss": self.train_loss_tracker.value
-                }, step=self.global_step)
+                logger.log_metrics({"train_loss": self.train_loss_tracker.value}, step=self.global_step)
         return loss
 
     def validation_step_end(self, outputs):
@@ -117,12 +125,9 @@ class BaseModule(pl.LightningModule):
         Args:
             outputs (Dict): the output from `.validation_step()` method.
         """
-        self.log('val_loss', outputs['loss'].mean())
+        self.log("val_loss", outputs["loss"].mean())
         for name, metric in self.metrics:
-            metric(
-                outputs['pred'].view(-1).cpu(),
-                outputs['target'].view(-1).cpu()
-            )
+            metric(outputs["pred"].view(-1).cpu(), outputs["target"].view(-1).cpu())
             self.log("val_" + name, metric)
 
     def test_step(self, batch, batch_idx):
@@ -131,13 +136,9 @@ class BaseModule(pl.LightningModule):
 
     def test_step_end(self, outputs):
         # TODO: merge this into `test_step()` as DP is no longer supported
-        """Basically the same as `.validation_step_ends()` method, but with a different prefix.
-        """
+        """Basically the same as `.validation_step_ends()` method, but with a different prefix."""
         # TODO: refactor to be able to simply defer to `.validation_step_ends()`?
-        self.log('test_loss', outputs['loss'].mean())
+        self.log("test_loss", outputs["loss"].mean())
         for name, metric in self.metrics:
-            metric(
-                outputs['pred'].view(-1).cpu(),
-                outputs['target'].view(-1).cpu()
-            )
+            metric(outputs["pred"].view(-1).cpu(), outputs["target"].view(-1).cpu())
             self.log("test_" + name, metric)
