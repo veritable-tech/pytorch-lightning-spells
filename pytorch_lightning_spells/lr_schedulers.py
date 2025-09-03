@@ -1,5 +1,3 @@
-from typing import Sequence
-
 import torch
 import numpy as np
 from torch.optim.lr_scheduler import _LRScheduler, CosineAnnealingLR
@@ -97,13 +95,17 @@ class ExponentialLR(BaseLRScheduler):
 
 
 class MultiStageScheduler(_LRScheduler):
-    def __init__(self, schedulers: Sequence, start_at_epochs: Sequence[int], last_epoch: int = -1):
+    def __init__(
+        self,
+        schedulers: list[_LRScheduler] | tuple[_LRScheduler],
+        start_at_epochs: list[int] | tuple[int],
+        last_epoch: int = -1,
+    ):
         assert len(schedulers) == len(start_at_epochs)
-        schedulers, start_at_epochs = (np.array(schedulers), np.array(start_at_epochs))
         # sort starting epochs in descending order
-        idx = np.flip(np.argsort(start_at_epochs))
-        self.schedulers = schedulers[idx]
-        self.start_at_epochs = start_at_epochs[idx]
+        idx = np.flip(np.argsort(np.asarray(start_at_epochs)))
+        self.schedulers = np.asarray(schedulers)[idx]
+        self.start_at_epochs = np.asarray(start_at_epochs)[idx]
         self.last_epoch = last_epoch
         # Explicitly run step(). Otherwise the initial LR will be initialized by the last sub-scheduler
         self.step(0)
