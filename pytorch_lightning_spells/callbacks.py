@@ -305,8 +305,8 @@ class LookaheadModelCheckpoint(ModelCheckpoint):
 
     def on_validation_start(self, trainer, pl_module):
         for optimizer in trainer.optimizers:
-            assert isinstance(optimizer, Lookahead), f"Optimizer {optimizer} is not a Lookahead optimizer"
-            if hasattr(optimizer, "_backup_and_load_cache"):
+            if isinstance(optimizer, Lookahead) and hasattr(optimizer, "_backup_and_load_cache"):
+                # Only apply this operation on lookahead optimizers
                 print("load slow parameters")
                 optimizer._backup_and_load_cache()
         super().on_validation_start(trainer, pl_module)
@@ -314,7 +314,7 @@ class LookaheadModelCheckpoint(ModelCheckpoint):
     def on_validation_end(self, trainer, pl_module):
         super().on_validation_end(trainer, pl_module)
         for optimizer in trainer.optimizers:
-            assert isinstance(optimizer, Lookahead), f"Optimizer {optimizer} is not a Lookahead optimizer"
-            if hasattr(optimizer, "_clear_and_load_backup"):
+            if isinstance(optimizer, Lookahead) and hasattr(optimizer, "_clear_and_load_backup"):
+                # Only apply this operation on lookahead optimizers
                 print("load fast parameters")
                 optimizer._clear_and_load_backup()
