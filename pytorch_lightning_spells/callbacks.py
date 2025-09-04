@@ -232,7 +232,8 @@ class TelegramCallback(Callback):
         except ImportError:
             raise ImportError("Please install 'python-telegram-bot' before using TelegramCallback.")
         try:
-            asyncio.run(self.telegram_bot.send_message(chat_id=self.chat_id, text=text))
+            event_loop = asyncio.get_event_loop()
+            event_loop.run_until_complete(self.telegram_bot.send_message(chat_id=self.chat_id, text=text))
         except telegram.error.TimedOut:
             # Ignore timeouts and continue training
             pass
@@ -277,9 +278,8 @@ class TelegramCallback(Callback):
         text = "\n".join(contents)
         self.send_message(text=text)
 
-    # Note: on_exception does not work as the main event loop will be closed during graceful shutdown
-    # def on_exception(self, trainer: pl.Trainer, pl_module: pl.LightningModule, exception: BaseException) -> None:
-    #     self.send_message(text=f"Exception occurred during training: {exception}")
+    def on_exception(self, trainer: pl.Trainer, pl_module: pl.LightningModule, exception: BaseException) -> None:
+        self.send_message(text=f"Exception occurred during training: {exception}")
 
     def _collect_metrics(self, trainer):
         ckpt_name_metrics = trainer.logged_metrics
