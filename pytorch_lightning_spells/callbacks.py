@@ -1,7 +1,6 @@
 import socket
 import random
 import asyncio
-from copy import deepcopy
 from datetime import datetime
 from typing import Optional, Sequence, Tuple
 
@@ -262,9 +261,13 @@ class TelegramCallback(Callback):
         self.send_message(text=text)
 
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
-        metrics, meta = self._collect_metrics(trainer)
         if self.report_evals is False:
+            # Eval metric report disabled
             return
+        if trainer.global_step == 0:
+            # This is the sanity check round
+            return
+        metrics, meta = self._collect_metrics(trainer)
         contents = [f"Metrics from {self.name} at step {meta['step']} (epoch {meta['epoch']}):"]
         contents += [
             f"{metric_name}: {metric_value:.6f}"
@@ -274,10 +277,12 @@ class TelegramCallback(Callback):
         text = "\n".join(contents)
         self.send_message(text=text)
 
+    # Note: on_exception does not work as the main event loop will be closed during graceful shutdown
+    # def on_exception(self, trainer: pl.Trainer, pl_module: pl.LightningModule, exception: BaseException) -> None:
+    #     self.send_message(text=f"Exception occurred during training: {exception}")
+
     def _collect_metrics(self, trainer):
-        ckpt_name_metrics = deepcopy(trainer.logger_connector.logged_metrics)
-        # ckpt_name_metrics.update(trainer.logger_connector.callback_metrics)
-        # ckpt_name_metrics.update(trainer.logger_connector.progress_bar_metrics)
+        ckpt_name_metrics = trainer.logged_metrics
         meta = {"step": trainer.global_step, "epoch": trainer.current_epoch}
         return ckpt_name_metrics, meta
 
