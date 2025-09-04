@@ -847,6 +847,12 @@ dependencies = [
     { name = "pytorch-lightning" },
     { name = "scikit-learn" },
     { name = "scipy" },
+    { name = "typing-extensions" },
+]
+
+[package.optional-dependencies]
+telegram = [
+    { name = "python-telegram-bot" },
 ]
 
 [package.dev-dependencies]
@@ -854,23 +860,22 @@ dev = [
     { name = "pytest" },
     { name = "pytest-env" },
 ]
-telegram = [
-    { name = "python-telegram-bot" },
-]
 
 [package.metadata]
 requires-dist = [
+    { name = "python-telegram-bot", marker = "extra == 'telegram'", specifier = ">=22.3" },
     { name = "pytorch-lightning", specifier = ">=2.5.0,<2.6.0" },
     { name = "scikit-learn", specifier = ">=1.7.1" },
     { name = "scipy", specifier = ">=1.16.1" },
+    { name = "typing-extensions", specifier = ">=4.15.0" },
 ]
+provides-extras = ["telegram"]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "pytest-env", specifier = ">=1.1.5" },
 ]
-telegram = [{ name = "python-telegram-bot", specifier = ">=22.3" }]
 
 [[package]]
 name = "pyyaml"
