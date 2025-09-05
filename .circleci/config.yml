@@ -29,7 +29,7 @@ jobs:
           command: curl -LsSf https://astral.sh/uv/install.sh | sh
       - run:
           name: Install dependencies
-          command: uv sync --frozen --group telegram
+          command: uv sync --frozen --extra telegram
       - run:
           name: "Are we on test mode?"
           command: echo ${TEST_MODE} # prints: XXXXXXX
