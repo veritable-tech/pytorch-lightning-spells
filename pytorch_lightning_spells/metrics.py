@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, Any
+from typing import Any, cast
 
 import torch
 import numpy as np
@@ -14,17 +14,17 @@ class GlobalMetric(Metric):
     def __init__(
         self,
         dist_sync_on_step: bool = False,
-        process_group: Optional[Any] = None,
+        process_group: Any = None,
     ):
         super().__init__(
             dist_sync_on_step=dist_sync_on_step,
             process_group=process_group,
         )
         self.add_state("preds", default=[], dist_reduce_fx=None)
-        self.add_state("target", default=[], dist_reduce_fx=None)
+        self.add_state("targets", default=[], dist_reduce_fx=None)
 
         rank_zero_warn(
-            "This Metric will save all targets and predictions in buffer. For large datasets this may lead to large memory footprint."
+            "This metric will save all targets and predictions in buffer. For large datasets this may lead to large memory footprint."
         )
 
     def update(self, preds: torch.Tensor, target: torch.Tensor):
@@ -35,8 +35,8 @@ class GlobalMetric(Metric):
             preds: Predictions from model
             target: Ground truth values
         """
-        self.preds.append(preds)
-        self.target.append(target)
+        cast(list[torch.Tensor], cast(object, self.preds)).append(preds)
+        cast(list[torch.Tensor], cast(object, self.targets)).append(target)
 
 
 class AUC(GlobalMetric):
@@ -62,15 +62,26 @@ class AUC(GlobalMetric):
     0.39
     """
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        message = (
+            "This is a specialized metric that coalesces all classes except the first into a single positive class. "
+            "Please use BinaryAUROC from torchmetrics if you have a binary classification problem: "
+            "'from torchmetrics.classification import BinaryAUROC'."
+        )
+        rank_zero_warn(message)
+
     def compute(self):
-        target = torch.cat(self.target, dim=0).cpu().long().numpy()
-        preds = torch.nan_to_num(torch.cat(self.preds, dim=0).float().cpu()).numpy()
-        if len(preds.shape) > 1:
-            preds = 1 - preds[:, 0]
-            target = (target != 0).astype(int)
-        if len(np.unique(target)) == 1:
-            return torch.tensor(0, device=self.preds[0].device)
-        return torch.tensor(roc_auc_score(target, preds), device=self.preds[0].device)
+        preds_list = cast(list[torch.Tensor], cast(object, self.preds))
+        target_list = cast(list[torch.Tensor], cast(object, self.targets))
+        targets_np = torch.cat(target_list, dim=0).cpu().long().numpy()
+        preds_np = torch.nan_to_num(torch.cat(preds_list, dim=0).float().cpu()).numpy()
+        if len(preds_np.shape) > 1:
+            preds_np = 1 - preds_np[:, 0]
+            targets_np = (targets_np != 0).astype(int)
+        if len(np.unique(targets_np)) == 1:
+            return torch.tensor(0, device=preds_list[0].device)
+        return torch.tensor(roc_auc_score(targets_np, preds_np), device=preds_list[0].device)
 
 
 class SpearmanCorrelation(GlobalMetric):
@@ -79,7 +90,7 @@ class SpearmanCorrelation(GlobalMetric):
         sigmoid: bool = False,
         compute_on_step: bool = False,
         dist_sync_on_step: bool = False,
-        process_group: Optional[Any] = None,
+        process_group: Any = None,
     ):
         super().__init__(
             dist_sync_on_step=dist_sync_on_step,
@@ -88,19 +99,25 @@ class SpearmanCorrelation(GlobalMetric):
         self.sigmoid = sigmoid
 
     def compute(self):
-        preds = torch.cat(self.preds, dim=0).float()
+        preds_list = cast(list[torch.Tensor], cast(object, self.preds))
+        target_list = cast(list[torch.Tensor], cast(object, self.targets))
+        preds_tensor = torch.cat(preds_list, dim=0).float()
         if self.sigmoid:
-            preds = torch.sigmoid(preds)
-        preds = preds.cpu().numpy()
-        target = torch.cat(self.target, dim=0).cpu().float().numpy()
-        spearman_score = spearmanr(target, preds).correlation
-        if len(np.unique(target)) == 1:
-            return torch.tensor(0, device=self.preds[0].device)
-        return torch.tensor(spearman_score, device=self.preds[0].device)
+            preds_tensor = torch.sigmoid(preds_tensor)
+        preds_np = preds_tensor.cpu().numpy()
+        targets_np = torch.cat(target_list, dim=0).cpu().float().numpy()
+        spearman_score = spearmanr(targets_np, preds_np).correlation  # pyright: ignore[reportAttributeAccessIssue]
+        if len(np.unique(targets_np)) == 1:
+            return torch.tensor(0, device=preds_list[0].device)
+        return torch.tensor(spearman_score, device=preds_list[0].device)
 
 
 class FBeta(GlobalMetric):
     """The F-beta score is the weighted harmonic mean of precision and recall
+
+    This is a specialized implementation.
+
+    -
 
     **Binary mode**
 
@@ -112,7 +129,9 @@ class FBeta(GlobalMetric):
 
     **Multi-class mode**
 
-    This will use the first column as the negative case, and the rest collectively as the positive case.
+    This will **use the first column as the negative case, and the rest collectively as the positive case**.
+
+    Use MulticlassFBetaScore from torchmetrics for the true multiclass F-score metric.
 
     >>> fbeta = FBeta()
     >>> _ = fbeta(torch.tensor([[0.8, 0.3, 0.7], [0.1, 0.1, 0.1], [0.1, 0.6, 0.2]]).t(), torch.tensor([0, 1, 0]))
@@ -127,7 +146,7 @@ class FBeta(GlobalMetric):
         beta: int = 2,
         compute_on_step: bool = False,
         dist_sync_on_step: bool = False,
-        process_group: Optional[Any] = None,
+        process_group: Any = None,
     ):
         super().__init__(
             dist_sync_on_step=dist_sync_on_step,
@@ -135,6 +154,12 @@ class FBeta(GlobalMetric):
         )
         self.step = step
         self.beta = beta
+        rank_zero_warn(
+            (
+                "This is a specialized metric that coalesces all classes except the first into the positive class and automatically optimizes the classification threshold. "
+                "Please use FBeta from torchmetrics for general use cases."
+            )
+        )
 
     def find_best_fbeta_threshold(self, truth, probs):
         best, best_thres = 0, -1
@@ -153,12 +178,14 @@ class FBeta(GlobalMetric):
         return best, best_thres
 
     def compute(self):
-        preds = torch.cat(self.preds, dim=0).float().cpu().numpy()
-        target = torch.cat(self.target, dim=0).cpu().long().numpy()
-        if len(preds.shape) > 1:
-            preds = 1 - preds[:, 0]
-            target = (target != 0).astype(int)
-        if len(np.unique(target)) == 1:
-            return torch.tensor(0, device=self.preds[0].device)
-        best_fbeta, best_thres = self.find_best_fbeta_threshold(target, preds)
-        return torch.tensor(best_fbeta, device=self.preds[0].device)
+        preds_list = cast(list[torch.Tensor], cast(object, self.preds))
+        target_list = cast(list[torch.Tensor], cast(object, self.targets))
+        preds_np = torch.cat(preds_list, dim=0).float().cpu().numpy()
+        targets_np = torch.cat(target_list, dim=0).cpu().long().numpy()
+        if len(preds_np.shape) > 1:
+            preds_np = 1 - preds_np[:, 0]
+            targets_np = (targets_np != 0).astype(int)
+        if len(np.unique(targets_np)) == 1:
+            return torch.tensor(0, device=preds_list[0].device)
+        best_fbeta, best_thres = self.find_best_fbeta_threshold(targets_np, preds_np)
+        return torch.tensor(best_fbeta, device=preds_list[0].device)
