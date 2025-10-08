@@ -96,21 +96,20 @@ class RandomAugmentationChoiceCallbackTest(unittest.TestCase):
 
 
 @patch("telegram.Bot")
-class TelegramCallbackTest(unittest.TestCase):
+class TelegramCallbackUnitTest(unittest.TestCase):
     def setUp(self):
         self.token = "test_token"
         self.chat_id = 12345
         self.name = "test_model"
         self.trainer = MagicMock(spec=Trainer)
         self.module = MagicMock()
-        self.trainer.logger_connector = MagicMock()
 
     def test_on_train_start(self, mock_bot):
         mock_bot.return_value.send_message = AsyncMock()
         callback = TelegramCallback(self.token, self.chat_id, self.name)
         callback.on_train_start(self.trainer, self.module)
         mock_bot.return_value.send_message.assert_called()
-        call_args = mock_bot.return_value.send_message.call_args[1]
+        call_args = mock_bot.return_value.send_message.call_args.kwargs
         self.assertIn("has started training", call_args["text"])
 
     def test_on_train_end(self, mock_bot):
@@ -118,25 +117,25 @@ class TelegramCallbackTest(unittest.TestCase):
         callback = TelegramCallback(self.token, self.chat_id, self.name)
         callback.on_train_end(self.trainer, self.module)
         mock_bot.return_value.send_message.assert_called()
-        call_args = mock_bot.return_value.send_message.call_args[1]
+        call_args = mock_bot.return_value.send_message.call_args.kwargs
         self.assertIn("has finished training", call_args["text"])
 
     def test_on_validation_end(self, mock_bot):
         mock_bot.return_value.send_message = AsyncMock()
         callback = TelegramCallback(self.token, self.chat_id, self.name, report_evals=True)
-        self.trainer.logger_connector.logged_metrics = {"val_loss": 0.5}
+        self.trainer.logged_metrics = {"val_loss": 0.5}
         self.trainer.global_step = 100
         self.trainer.current_epoch = 1
         callback.on_validation_end(self.trainer, self.module)
         mock_bot.return_value.send_message.assert_called()
-        call_args = mock_bot.return_value.send_message.call_args[1]
+        call_args = mock_bot.return_value.send_message.call_args.kwargs
         self.assertIn("Metrics from", call_args["text"])
         self.assertIn("val_loss", call_args["text"])
 
     def test_report_evals_false(self, mock_bot):
         mock_bot.return_value.send_message = AsyncMock()
         callback = TelegramCallback(self.token, self.chat_id, self.name, report_evals=False)
-        self.trainer.logger_connector.logged_metrics = {"val_loss": 0.5}
+        self.trainer.logged_metrics = {"val_loss": 0.5}
         callback.on_validation_end(self.trainer, self.module)
         mock_bot.return_value.send_message.assert_not_called()
 
@@ -168,6 +167,54 @@ class SimpleModel(LightningModule):
         optimizer = torch.optim.SGD(self.parameters(), lr=0.001)
         optimizer = Lookahead(optimizer, k=2)
         return optimizer
+
+
+@patch("telegram.Bot")
+class TelegramCallbackIntegrationTest(unittest.TestCase):
+    def setUp(self):
+        self.model = SimpleModel()
+        self.train_loader = DataLoader(TensorDataset(torch.randn(10, 32), torch.randn(10, 1)), batch_size=2)
+        self.val_loader = DataLoader(TensorDataset(torch.randn(10, 32), torch.randn(10, 1)), batch_size=2)
+
+    def test_telegram_callback(self, mock_bot):
+        mock_bot.return_value.send_message = AsyncMock()
+        model = SimpleModel()
+        callback = TelegramCallback("dummy_token", 1234, "test_model", report_evals=True)
+        trainer = Trainer(
+            max_epochs=2,
+            callbacks=[callback],
+            logger=False,
+            enable_checkpointing=False,
+        )
+        trainer.fit(model, self.train_loader, self.val_loader)
+        assert mock_bot.return_value.send_message.call_count == 4
+        for call_args in mock_bot.return_value.send_message.call_args_list:
+            print(call_args.kwargs)
+
+        # Training starts
+        assert (
+            mock_bot.return_value.send_message.call_args_list[0]
+            .kwargs["text"]
+            .startswith("test_model has started training")
+        )
+        # First epoch finished
+        assert (
+            mock_bot.return_value.send_message.call_args_list[1]
+            .kwargs["text"]
+            .startswith("Metrics from test_model at step 5 (epoch 0)")
+        )
+        # Second epoch finished
+        assert (
+            mock_bot.return_value.send_message.call_args_list[2]
+            .kwargs["text"]
+            .startswith("Metrics from test_model at step 10 (epoch 1)")
+        )
+        # Training finished
+        assert (
+            mock_bot.return_value.send_message.call_args_list[3]
+            .kwargs["text"]
+            .startswith("test_model has finished training 🎉")
+        )
 
 
 class LookaheadIntegrationTest(unittest.TestCase):

@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from torch.optim.lr_scheduler import _LRScheduler, CosineAnnealingLR
+from torch.optim.lr_scheduler import LRScheduler, CosineAnnealingLR
 
 __all__ = [
     "BaseLRScheduler",
@@ -11,7 +11,7 @@ __all__ = [
 ]
 
 
-class BaseLRScheduler(_LRScheduler):
+class BaseLRScheduler(LRScheduler):
     def switch_optimizer(self, optimizer):
         self.optimizer = optimizer
         self.optimizer._step_count = self._step_count
@@ -94,10 +94,10 @@ class ExponentialLR(BaseLRScheduler):
         return [base_lr * (self.min_lr_ratio) ** progress for base_lr in self.base_lrs]
 
 
-class MultiStageScheduler(_LRScheduler):
+class MultiStageScheduler(LRScheduler):
     def __init__(
         self,
-        schedulers: list[_LRScheduler] | tuple[_LRScheduler],
+        schedulers: list[LRScheduler] | tuple[LRScheduler],
         start_at_epochs: list[int] | tuple[int],
         last_epoch: int = -1,
     ):
@@ -107,9 +107,10 @@ class MultiStageScheduler(_LRScheduler):
         self.schedulers = np.asarray(schedulers)[idx]
         self.start_at_epochs = np.asarray(start_at_epochs)[idx]
         self.last_epoch = last_epoch
-        # Explicitly run step(). Otherwise the initial LR will be initialized by the last sub-scheduler
-        self.step(0)
         self.optimizer = self.schedulers[0].optimizer
+        # Intentionally not calling super.__init__ to avoid complications.
+        # Instead, manually trigger _initial_step to set up initial LR values.
+        self._initial_step()
 
     def step(self, epoch=None):
         if epoch is None:

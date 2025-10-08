@@ -7,7 +7,7 @@ import torch.nn as nn
 from torch.nn.parameter import Parameter
 import numpy as np
 
-Layer = Union[torch.nn.Module, torch.nn.ModuleList]
+Layer = Union[torch.nn.Module, torch.nn.ModuleList, list[torch.nn.Module]]
 
 
 class EMATracker:

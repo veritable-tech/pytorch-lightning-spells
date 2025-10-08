@@ -1,7 +1,6 @@
 import socket
 import random
 import asyncio
-from copy import deepcopy
 from datetime import datetime
 from typing import Optional, Sequence, Tuple
 
@@ -233,7 +232,8 @@ class TelegramCallback(Callback):
         except ImportError:
             raise ImportError("Please install 'python-telegram-bot' before using TelegramCallback.")
         try:
-            asyncio.run(self.telegram_bot.send_message(chat_id=self.chat_id, text=text))
+            event_loop = asyncio.get_event_loop()
+            event_loop.run_until_complete(self.telegram_bot.send_message(chat_id=self.chat_id, text=text))
         except telegram.error.TimedOut:
             # Ignore timeouts and continue training
             pass
@@ -262,9 +262,13 @@ class TelegramCallback(Callback):
         self.send_message(text=text)
 
     def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
-        metrics, meta = self._collect_metrics(trainer)
         if self.report_evals is False:
+            # Eval metric report disabled
             return
+        if trainer.global_step == 0:
+            # This is the sanity check round
+            return
+        metrics, meta = self._collect_metrics(trainer)
         contents = [f"Metrics from {self.name} at step {meta['step']} (epoch {meta['epoch']}):"]
         contents += [
             f"{metric_name}: {metric_value:.6f}"
@@ -274,10 +278,11 @@ class TelegramCallback(Callback):
         text = "\n".join(contents)
         self.send_message(text=text)
 
+    def on_exception(self, trainer: pl.Trainer, pl_module: pl.LightningModule, exception: BaseException) -> None:
+        self.send_message(text=f"Exception occurred during training: {exception}")
+
     def _collect_metrics(self, trainer):
-        ckpt_name_metrics = deepcopy(trainer.logger_connector.logged_metrics)
-        # ckpt_name_metrics.update(trainer.logger_connector.callback_metrics)
-        # ckpt_name_metrics.update(trainer.logger_connector.progress_bar_metrics)
+        ckpt_name_metrics = trainer.logged_metrics
         meta = {"step": trainer.global_step, "epoch": trainer.current_epoch}
         return ckpt_name_metrics, meta
 

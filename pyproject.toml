@@ -7,16 +7,19 @@ dependencies = [
     "pytorch-lightning>=2.5.0,<2.6.0",
     "scikit-learn>=1.7.1",
     "scipy>=1.16.1",
+    "typing-extensions>=4.15.0",
 ]
 author = "Ceshine Lee"
+
+[project.optional-dependencies]
+telegram = [
+    "python-telegram-bot>=22.3",
+]
 
 [dependency-groups]
 dev = [
     "pytest>=8.4.1",
     "pytest-env>=1.1.5",
-]
-telegram = [
-    "python-telegram-bot>=22.3",
 ]
 
 [build-system]
