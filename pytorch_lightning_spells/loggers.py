@@ -100,7 +100,7 @@ class ScreenLogger(Logger):
     @property
     @override
     def name(self):
-        return None
+        return ""
 
     @property
     @override
