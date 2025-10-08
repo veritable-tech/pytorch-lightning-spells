@@ -1,4 +1,4 @@
-__version__ = "0.2.1-dev.2"
+__version__ = "0.2.1"
 __docs__ = "Some useful plugins for PyTorch Lightning."
 __author__ = "Ceshine Lee"
 __author_email__ = "ceshine@veritable.pw"
