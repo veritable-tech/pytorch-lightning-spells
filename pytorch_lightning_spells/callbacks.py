@@ -217,7 +217,7 @@ class TelegramCallback(Callback):
     Reference: `huggingface/knockknock <https://github.com/huggingface/knockknock>`_
     """
 
-    DATE_FORMAT = "%Y-%m-%d %H:%M:%d"
+    DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
     def __init__(self, token: str, chat_id: int, name: str, report_evals: bool = False):
         try:
