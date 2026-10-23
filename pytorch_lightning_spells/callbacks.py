@@ -226,6 +226,9 @@ class TelegramCallback(Callback):
             raise ImportError("Please install 'python-telegram-bot' before using TelegramCallback.")
         self._token = token
         self.telegram_bot = telegram.Bot(token=self._token)
+        # A dedicated loop keeps the bot's HTTP client on one loop for all messages.
+        # asyncio.get_event_loop() warns on Python 3.12 and raises on 3.14 when no loop is set.
+        self._event_loop = asyncio.new_event_loop()
         self.host_name = socket.gethostname()
         self.report_evals = report_evals
         self.chat_id = chat_id
@@ -238,8 +241,7 @@ class TelegramCallback(Callback):
         except ImportError:
             raise ImportError("Please install 'python-telegram-bot' before using TelegramCallback.")
         try:
-            event_loop = asyncio.get_event_loop()
-            event_loop.run_until_complete(self.telegram_bot.send_message(chat_id=self.chat_id, text=text))
+            self._event_loop.run_until_complete(self.telegram_bot.send_message(chat_id=self.chat_id, text=text))
         except telegram.error.TimedOut:
             # Ignore timeouts and continue training
             pass
