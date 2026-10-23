@@ -1,6 +1,8 @@
 # This is a new file for testing callbacks.
 # I will add tests here in the next steps.
+import io
 import os
+import urllib.error
 import unittest
 from unittest.mock import patch, AsyncMock, MagicMock
 
@@ -12,6 +14,7 @@ from pytorch_lightning import Trainer, LightningModule
 from pytorch_lightning.callbacks import Callback
 
 from pytorch_lightning_spells.callbacks import (
+    NtfyCallback,
     MixUpCallback,
     CutMixCallback,
     SnapMixCallback,
@@ -215,6 +218,129 @@ class TelegramCallbackIntegrationTest(unittest.TestCase):
             .kwargs["text"]
             .startswith("test_model has finished training 🎉")
         )
+
+
+NTFY_ENV = {"NTFY_TOPIC": "test_topic", "NTFY_SERVER_URL": "https://ntfy.example.com/", "NTFY_TOKEN": "tk_test"}
+
+
+def _ntfy_requests(mock_urlopen):
+    return [call_args.args[0] for call_args in mock_urlopen.call_args_list]
+
+
+@patch.dict(os.environ, NTFY_ENV)
+@patch("pytorch_lightning_spells.callbacks.urllib.request.urlopen")
+class NtfyCallbackUnitTest(unittest.TestCase):
+    def setUp(self):
+        self.name = "test_model"
+        self.trainer = MagicMock(spec=Trainer)
+        self.trainer.sanity_checking = False
+        self.module = MagicMock()
+
+    def test_config_from_env(self, mock_urlopen):
+        callback = NtfyCallback(self.name)
+        callback.on_train_start(self.trainer, self.module)
+        (request,) = _ntfy_requests(mock_urlopen)
+        self.assertEqual(request.full_url, "https://ntfy.example.com/test_topic")
+        self.assertEqual(request.get_method(), "POST")
+        self.assertEqual(request.get_header("Authorization"), "Bearer tk_test")
+        self.assertEqual(request.get_header("Priority"), "3")
+        self.assertEqual(request.get_header("Title"), "Training started")
+        self.assertTrue(request.get_header("User-agent").startswith("pytorch-lightning-spells/"))
+        self.assertIn("has started training", request.data.decode("utf-8"))
+
+    def test_missing_topic(self, mock_urlopen):
+        with patch.dict(os.environ, {"NTFY_TOPIC": ""}):
+            with self.assertRaises(ValueError):
+                NtfyCallback(self.name)
+
+    def test_invalid_priority(self, mock_urlopen):
+        with patch.dict(os.environ, {"NTFY_PRIORITY": "6"}):
+            with self.assertRaises(ValueError):
+                NtfyCallback(self.name)
+
+    def test_no_token(self, mock_urlopen):
+        with patch.dict(os.environ, {"NTFY_TOKEN": ""}):
+            NtfyCallback(self.name).on_train_end(self.trainer, self.module)
+        (request,) = _ntfy_requests(mock_urlopen)
+        self.assertIsNone(request.get_header("Authorization"))
+        self.assertIn("has finished training", request.data.decode("utf-8"))
+
+    def test_on_validation_end(self, mock_urlopen):
+        callback = NtfyCallback(self.name, report_evals=True)
+        self.trainer.logged_metrics = {"val_loss": 0.5, "epoch": 1}
+        self.trainer.global_step = 100
+        self.trainer.current_epoch = 1
+        callback.on_validation_end(self.trainer, self.module)
+        (request,) = _ntfy_requests(mock_urlopen)
+        text = request.data.decode("utf-8")
+        self.assertIn("at step 100 (epoch 1)", text)
+        self.assertIn("val\\_loss: 0.500000", text)
+        self.assertNotIn("epoch:", text)
+
+    def test_report_evals_false(self, mock_urlopen):
+        callback = NtfyCallback(self.name, report_evals=False)
+        self.trainer.logged_metrics = {"val_loss": 0.5}
+        callback.on_validation_end(self.trainer, self.module)
+        mock_urlopen.assert_not_called()
+
+    def test_skip_sanity_check(self, mock_urlopen):
+        callback = NtfyCallback(self.name, report_evals=True)
+        self.trainer.sanity_checking = True
+        callback.on_validation_end(self.trainer, self.module)
+        mock_urlopen.assert_not_called()
+
+    def test_on_exception(self, mock_urlopen):
+        NtfyCallback(self.name).on_exception(self.trainer, self.module, RuntimeError("boom"))
+        (request,) = _ntfy_requests(mock_urlopen)
+        self.assertEqual(request.get_header("Title"), "Training failed")
+        self.assertIn("boom", request.data.decode("utf-8"))
+
+    def test_truncate(self, mock_urlopen):
+        NtfyCallback(self.name).send_message("é" * 5000, title="t", tags="x")
+        (request,) = _ntfy_requests(mock_urlopen)
+        self.assertLessEqual(len(request.data), NtfyCallback.MAX_BODY_BYTES)
+        self.assertTrue(request.data.decode("utf-8").endswith(NtfyCallback.TRUNCATION_MARKER))
+
+    def test_errors_do_not_raise(self, mock_urlopen):
+        callback = NtfyCallback(self.name)
+        mock_urlopen.side_effect = urllib.error.HTTPError(
+            "https://ntfy.example.com/test_topic", 403, "Forbidden", {}, io.BytesIO(b"denied tk_test")
+        )
+        with self.assertLogs("pytorch_lightning_spells.callbacks", level="WARNING") as logs:
+            callback.on_train_start(self.trainer, self.module)
+        self.assertIn("HTTP 403", logs.output[0])
+        # The token is redacted from the logs
+        self.assertNotIn("tk_test", logs.output[0])
+        mock_urlopen.side_effect = urllib.error.URLError("connection refused")
+        with self.assertLogs("pytorch_lightning_spells.callbacks", level="WARNING"):
+            callback.on_train_start(self.trainer, self.module)
+
+
+@patch.dict(os.environ, NTFY_ENV)
+@patch("pytorch_lightning_spells.callbacks.urllib.request.urlopen")
+class NtfyCallbackIntegrationTest(unittest.TestCase):
+    def setUp(self):
+        self.train_loader = DataLoader(TensorDataset(torch.randn(10, 32), torch.randn(10, 1)), batch_size=2)
+        self.val_loader = DataLoader(TensorDataset(torch.randn(10, 32), torch.randn(10, 1)), batch_size=2)
+
+    def test_ntfy_callback(self, mock_urlopen):
+        model = SimpleModel()
+        callback = NtfyCallback("test_model", report_evals=True)
+        trainer = Trainer(
+            max_epochs=2,
+            callbacks=[callback],
+            logger=False,
+            enable_checkpointing=False,
+        )
+        trainer.fit(model, self.train_loader, self.val_loader)
+        titles = [request.get_header("Title") for request in _ntfy_requests(mock_urlopen)]
+        # The sanity check round is skipped
+        self.assertEqual(
+            titles, ["Training started", "Validation finished", "Validation finished", "Training finished"]
+        )
+        texts = [request.data.decode("utf-8") for request in _ntfy_requests(mock_urlopen)]
+        self.assertIn("at step 5 (epoch 0)", texts[1])
+        self.assertIn("at step 10 (epoch 1)", texts[2])
 
 
 class LookaheadIntegrationTest(unittest.TestCase):

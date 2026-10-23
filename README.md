@@ -36,6 +36,19 @@ uv add git+https://github.com/veritable-tech/pytorch-lightning-spells.git@main
 
 ## Release Notes
 
+### 0.3.0 (2026-10-23)
+
+Adds an ntfy notification callback and fixes a few issues in TelegramCallback.
+
+- Callbacks
+  - NtfyCallback (new): publish an [ntfy](https://ntfy.sh) notification when training starts, ends, or fails, and (optionally) after each validation round. Configured via the `NTFY_TOPIC` (required), `NTFY_SERVER_URL`, `NTFY_TOKEN`, `NTFY_PRIORITY`, and `NTFY_TIMEOUT` environment variables. No extra dependencies.
+  - TelegramCallback: use a dedicated event loop instead of `asyncio.get_event_loop()`, which warns on Python 3.12 and raises on Python 3.14.
+  - TelegramCallback: show seconds instead of the day of the month in timestamps.
+
+Compatibility notes
+
+- No breaking changes.
+
 ### 0.2.1 (2025-10-08)
 
 A small patch focused on clarity, type-safety, and minor robustness fixes. No public API changes; runtime behavior is preserved.
