@@ -1,11 +1,11 @@
 import math
 import warnings
-from typing import Sequence, Union, Iterable, Optional, List
+from typing import List, Union, Iterable, Optional, Sequence
 
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
-import numpy as np
 
 Layer = Union[torch.nn.Module, torch.nn.ModuleList, list[torch.nn.Module]]
 

@@ -2,23 +2,23 @@
 # I will add tests here in the next steps.
 import os
 import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch, AsyncMock, MagicMock
 
-import pytest
 import torch
 import torch.nn as nn
+import pytest
+from torch.utils.data import DataLoader, TensorDataset
 from pytorch_lightning import Trainer, LightningModule
 from pytorch_lightning.callbacks import Callback
-from torch.utils.data import TensorDataset, DataLoader
 
 from pytorch_lightning_spells.callbacks import (
-    CutMixCallback,
-    LookaheadCallback,
-    LookaheadModelCheckpoint,
     MixUpCallback,
-    RandomAugmentationChoiceCallback,
+    CutMixCallback,
     SnapMixCallback,
     TelegramCallback,
+    LookaheadCallback,
+    LookaheadModelCheckpoint,
+    RandomAugmentationChoiceCallback,
 )
 from pytorch_lightning_spells.optimizers import Lookahead
 
