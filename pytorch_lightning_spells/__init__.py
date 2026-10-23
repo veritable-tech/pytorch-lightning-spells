@@ -8,7 +8,7 @@ from . import utils
 from . import lr_schedulers
 from . import metrics
 from . import samplers
-from .version import __version__, __docs__, __author__, __author_email__, __license__
+from .version import __docs__, __author__, __license__, __version__, __author_email__
 
 __all__ = [
     "callbacks",

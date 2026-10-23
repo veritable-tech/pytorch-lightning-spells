@@ -2,9 +2,9 @@ import json
 import numbers
 from enum import Enum
 from pprint import pprint
-from datetime import datetime, date
+from datetime import date, datetime
+from typing import Any, Optional, MutableMapping
 from collections.abc import MutableMapping as _ABCMutableMapping
-from typing import Optional, MutableMapping, Any
 from typing_extensions import override
 
 from pytorch_lightning.loggers import Logger

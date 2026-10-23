@@ -1,13 +1,13 @@
 import warnings
 from typing import Any, cast
 
-import torch
 import numpy as np
-from torchmetrics import Metric
+import torch
 from scipy.stats import spearmanr
-from pytorch_lightning.utilities import rank_zero_warn
 from sklearn.metrics import fbeta_score, roc_auc_score
 from sklearn.exceptions import UndefinedMetricWarning
+from torchmetrics import Metric
+from pytorch_lightning.utilities import rank_zero_warn
 
 
 class GlobalMetric(Metric):
