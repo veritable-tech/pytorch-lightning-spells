@@ -15,6 +15,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 # from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
+from .version import __version__
 from .optimizers import Lookahead
 from .cutmix_utils import rand_bbox, rand_bbox_minmax, cutmix_bbox_and_lam
 from .snapmix_utils import get_spm
@@ -349,6 +350,8 @@ class NtfyCallback(Callback):
             "Priority": str(self._priority),
             "Tags": tags,
             "Markdown": "yes",
+            # Some proxies (e.g., Cloudflare) block urllib's default "Python-urllib" User-Agent.
+            "User-Agent": f"pytorch-lightning-spells/{__version__}",
         }
         if self._token is not None:
             headers["Authorization"] = f"Bearer {self._token}"

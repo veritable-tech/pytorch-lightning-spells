@@ -245,6 +245,7 @@ class NtfyCallbackUnitTest(unittest.TestCase):
         self.assertEqual(request.get_header("Authorization"), "Bearer tk_test")
         self.assertEqual(request.get_header("Priority"), "3")
         self.assertEqual(request.get_header("Title"), "Training started")
+        self.assertTrue(request.get_header("User-agent").startswith("pytorch-lightning-spells/"))
         self.assertIn("has started training", request.data.decode("utf-8"))
 
     def test_missing_topic(self, mock_urlopen):
