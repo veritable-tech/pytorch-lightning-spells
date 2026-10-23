@@ -1,6 +1,10 @@
+import os
 import random
 import socket
+import urllib.error
+import urllib.request
 import asyncio
+import logging
 from datetime import datetime
 from typing import Tuple, Optional, Sequence
 
@@ -14,6 +18,8 @@ from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from .optimizers import Lookahead
 from .cutmix_utils import rand_bbox, rand_bbox_minmax, cutmix_bbox_and_lam
 from .snapmix_utils import get_spm
+
+LOGGER = logging.getLogger(__name__)
 
 
 class RandomAugmentationChoiceCallback(Callback):
@@ -285,6 +291,143 @@ class TelegramCallback(Callback):
         ckpt_name_metrics = trainer.logged_metrics
         meta = {"step": trainer.global_step, "epoch": trainer.current_epoch}
         return ckpt_name_metrics, meta
+
+
+class NtfyCallback(Callback):
+    """An ntfy notification callback
+
+    Publishes a message to an `ntfy <https://ntfy.sh>`_ topic when the training starts, ends, and
+    (optionally) when a validation round is finished.
+
+    The ntfy settings are read from these environment variables:
+
+    * ``NTFY_TOPIC`` (required): the topic to publish to.
+    * ``NTFY_SERVER_URL`` (optional): the base URL of the ntfy server. Defaults to ``https://ntfy.sh``.
+    * ``NTFY_TOKEN`` (optional): an access token (``tk_...``) for topics that require authentication.
+    * ``NTFY_PRIORITY`` (optional): the message priority from 1 (min) to 5 (max). Defaults to 3.
+    * ``NTFY_TIMEOUT`` (optional): the HTTP request timeout in seconds. Defaults to 10.
+
+    Failures to deliver a message are logged as warnings and do not interrupt the training.
+
+    Reference: `ceshine/rclone-sync-runner <https://github.com/ceshine/rclone-sync-runner>`_
+
+    Args:
+        name (str): The name of the experiment, included in every message.
+        report_evals (bool, optional): Whether to send the metrics after each validation round. Defaults to False.
+    """
+
+    DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+    # Without an attachment cache, ntfy rejects a body of 4,096 bytes or more.
+    MAX_BODY_BYTES = 4095
+    TRUNCATION_MARKER = "\n\n(truncated)"
+    MAX_LOGGED_RESPONSE_CHARS = 200
+    # Characters that start inline Markdown syntax.
+    MARKDOWN_SPECIAL_CHARACTERS = frozenset("\\`*_[]<>~")
+
+    def __init__(self, name: str, report_evals: bool = False):
+        topic = os.environ.get("NTFY_TOPIC", "").strip()
+        if not topic:
+            raise ValueError("Please set the 'NTFY_TOPIC' environment variable before using NtfyCallback.")
+        server_url = os.environ.get("NTFY_SERVER_URL", "").strip() or "https://ntfy.sh"
+        self._url = f"{server_url.rstrip('/')}/{topic}"
+        self._token = os.environ.get("NTFY_TOKEN", "").strip() or None
+        self._priority = int(os.environ.get("NTFY_PRIORITY", "3"))
+        if not 1 <= self._priority <= 5:
+            raise ValueError(f"'NTFY_PRIORITY' must be between 1 and 5, got {self._priority}.")
+        self._timeout = float(os.environ.get("NTFY_TIMEOUT", "10"))
+        self.host_name = socket.gethostname()
+        self.report_evals = report_evals
+        self.name = name
+        self.start_time = datetime.now()
+
+    def send_message(self, text: str, title: str, tags: str):
+        # Header values must be ASCII, so user-provided names go in the body only.
+        headers = {
+            "Title": title,
+            "Priority": str(self._priority),
+            "Tags": tags,
+            "Markdown": "yes",
+        }
+        if self._token is not None:
+            headers["Authorization"] = f"Bearer {self._token}"
+        request = urllib.request.Request(
+            self._url, data=self._truncate(text).encode("utf-8"), headers=headers, method="POST"
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=self._timeout):
+                pass
+        except urllib.error.HTTPError as error:
+            response_text = error.read().decode("utf-8", "replace").strip()[: self.MAX_LOGGED_RESPONSE_CHARS]
+            LOGGER.warning("ntfy notification failed: HTTP %s: %s", error.code, self._redact(response_text))
+        # ValueError (e.g. UnicodeEncodeError for a non-ASCII header) comes from bad settings.
+        except (urllib.error.URLError, OSError, ValueError) as error:
+            # Ignore network errors and continue training
+            LOGGER.warning("ntfy notification failed: %s", self._redact(str(error)))
+
+    def on_train_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        self.start_time = datetime.now()
+        contents = [
+            f"**{self._markdown_text(self.name)}** has started training 🎬",
+            "",
+            "- Machine name: %s" % self._markdown_text(self.host_name),
+            "- Starting date: %s" % self.start_time.strftime(self.DATE_FORMAT),
+        ]
+        self.send_message("\n".join(contents), title="Training started", tags="clapper")
+
+    def on_train_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        end_time = datetime.now()
+        elapsed_time = end_time - self.start_time
+        contents = [
+            f"**{self._markdown_text(self.name)}** has finished training 🎉",
+            "",
+            "- Machine name: %s" % self._markdown_text(self.host_name),
+            "- Starting date: %s" % self.start_time.strftime(self.DATE_FORMAT),
+            "- End date: %s" % end_time.strftime(self.DATE_FORMAT),
+            "- Training duration: %s" % str(elapsed_time),
+        ]
+        self.send_message("\n".join(contents), title="Training finished", tags="tada")
+
+    def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        if self.report_evals is False or trainer.sanity_checking:
+            return
+        contents = [
+            f"Metrics from **{self._markdown_text(self.name)}** at step {trainer.global_step} "
+            f"(epoch {trainer.current_epoch}):",
+            "",
+        ]
+        contents += [
+            f"- {self._markdown_text(metric_name)}: {float(metric_value):.6f}"
+            for metric_name, metric_value in trainer.logged_metrics.items()
+            if metric_name != "epoch"
+        ]
+        self.send_message("\n".join(contents), title="Validation finished", tags="bar_chart")
+
+    def on_exception(self, trainer: pl.Trainer, pl_module: pl.LightningModule, exception: BaseException) -> None:
+        text = f"Exception occurred during training of **{self._markdown_text(self.name)}**: " + self._markdown_text(
+            repr(exception)
+        )
+        self.send_message(text, title="Training failed", tags="x")
+
+    def _redact(self, text: str) -> str:
+        """Remove the access token from text that goes to the logs."""
+        if not self._token:
+            return text
+        return text.replace(self._token, "<redacted token>")
+
+    @classmethod
+    def _markdown_text(cls, value: str) -> str:
+        """Escape user-provided data for Markdown rendering."""
+        return "".join(f"\\{char}" if char in cls.MARKDOWN_SPECIAL_CHARACTERS else char for char in value)
+
+    @classmethod
+    def _truncate(cls, text: str) -> str:
+        """Shorten a message body to the size that ntfy accepts."""
+        encoded = text.encode("utf-8")
+        if len(encoded) <= cls.MAX_BODY_BYTES:
+            return text
+        budget = cls.MAX_BODY_BYTES - len(cls.TRUNCATION_MARKER.encode("utf-8"))
+        # "ignore" drops a multi-byte character that the cut splits.
+        return encoded[:budget].decode("utf-8", "ignore") + cls.TRUNCATION_MARKER
 
 
 class LookaheadCallback(Callback):

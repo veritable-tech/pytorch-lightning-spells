@@ -76,6 +76,7 @@ Utility
 * `BaseModule <pytorch_lightning_spells.html#module-pytorch_lightning_spells>`_: A boilerplate Lightning Module to be extended upon.
 * `ScreenLogger <pytorch_lightning_spells.loggers.html#pytorch_lightning_spells.loggers.ScreenLogger>`_: A logger that prints metrics to the screen.
 * `TelegramCallback <pytorch_lightning_spells.callbacks.html#pytorch_lightning_spells.callbacks.TelegramCallback>`_: Sent a Telegram message to you when the training starts, ends, and a validation round is finished.
+* `NtfyCallback <pytorch_lightning_spells.callbacks.html#pytorch_lightning_spells.callbacks.NtfyCallback>`_: Publish an `ntfy <https://ntfy.sh>`_ notification when the training starts, ends, and a validation round is finished. Configured via environment variables (``NTFY_TOPIC``, ``NTFY_SERVER_URL``, ``NTFY_TOKEN``, ``NTFY_PRIORITY``, ``NTFY_TIMEOUT``).
 * `EMATracker <pytorch_lightning_spells.utils.html#pytorch_lightning_spells.utils.EMATracker>`_: A exponential moving average aggregator.
 * `count_parameters <pytorch_lightning_spells.utils.html#pytorch_lightning_spells.utils.count_parameters>`_: A function that returns the total number of parameters in a model.
 * `separate_parameters <pytorch_lightning_spells.utils.html#pytorch_lightning_spells.utils.separate_parameters>`_: A function that split the parameters of a module into two groups (BatchNorm/GroupNorm/LayerNorm and others), so you can use weight decay on only one of them.
