@@ -1,9 +1,7 @@
-from typing import List, Tuple, Union, Optional
-
 import numpy as np
 
 
-def rand_bbox(img_shape: Tuple, lam: float, margin: float = 0.0, count: Optional[int] = None):
+def rand_bbox(img_shape: tuple, lam: float, margin: float = 0.0, count: int | None = None):
     """Standard CutMix bounding-box
 
     Generates a random square bbox based on lambda value. This impl includes
@@ -28,7 +26,7 @@ def rand_bbox(img_shape: Tuple, lam: float, margin: float = 0.0, count: Optional
     return yl, yh, xl, xh
 
 
-def rand_bbox_minmax(img_shape: Tuple, minmax: Union[Tuple, List], count: Optional[int] = None):
+def rand_bbox_minmax(img_shape: tuple, minmax: tuple | list, count: int | None = None):
     """Min-Max CutMix bounding-box
 
     Inspired by Darknet cutmix impl, generates a random rectangular bbox
@@ -51,7 +49,7 @@ def rand_bbox_minmax(img_shape: Tuple, minmax: Union[Tuple, List], count: Option
     return yl, yu, xl, xu
 
 
-def cutmix_bbox_and_lam(img_shape: Tuple, lam, ratio_minmax=None, correct_lam=True, count: Optional[int] = None):
+def cutmix_bbox_and_lam(img_shape: tuple, lam, ratio_minmax=None, correct_lam=True, count: int | None = None):
     """Generate bbox and apply lambda correction."""
     if ratio_minmax is not None:
         yl, yu, xl, xu = rand_bbox_minmax(img_shape, ratio_minmax, count=count)

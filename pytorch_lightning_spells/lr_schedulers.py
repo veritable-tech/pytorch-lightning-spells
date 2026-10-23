@@ -4,10 +4,10 @@ from torch.optim.lr_scheduler import LRScheduler, CosineAnnealingLR
 
 __all__ = [
     "BaseLRScheduler",
-    "LinearLR",
-    "ExponentialLR",
-    "MultiStageScheduler",
     "CosineAnnealingScheduler",
+    "ExponentialLR",
+    "LinearLR",
+    "MultiStageScheduler",
 ]
 
 
@@ -50,7 +50,7 @@ class LinearLR(BaseLRScheduler):
         self.upward = upward
         self.min_lr_ratio = min_lr_ratio
         self.total_epochs = total_epochs - 1  # starts from zero
-        super(LinearLR, self).__init__(optimizer, last_epoch)
+        super().__init__(optimizer, last_epoch)
 
     def get_lr(self):
         current_epoch = self.last_epoch
@@ -86,7 +86,7 @@ class ExponentialLR(BaseLRScheduler):
         assert min_lr_ratio < 1
         self.min_lr_ratio = min_lr_ratio
         self.total_epochs = total_epochs - 1  # start from zero
-        super(ExponentialLR, self).__init__(optimizer, last_epoch)
+        super().__init__(optimizer, last_epoch)
 
     def get_lr(self):
         current_epoch = self.last_epoch + 1

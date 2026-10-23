@@ -11,20 +11,20 @@ from . import samplers
 from .version import __docs__, __author__, __license__, __version__, __author_email__
 
 __all__ = [
+    "BaseModule",
+    "__author__",
+    "__author_email__",
+    "__docs__",
+    "__license__",
+    "__version__",
     "callbacks",
     "loggers",
     "losses",
-    "optimizers",
-    "utils",
     "lr_schedulers",
     "metrics",
+    "optimizers",
     "samplers",
-    "__version__",
-    "__docs__",
-    "__author__",
-    "__author_email__",
-    "__license__",
-    "BaseModule",
+    "utils",
 ]
 
 

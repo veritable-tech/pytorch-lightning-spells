@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch, AsyncMock, MagicMock
 
 import torch
-import torch.nn as nn
+from torch import nn
 import pytest
 from torch.utils.data import DataLoader, TensorDataset
 from pytorch_lightning import Trainer, LightningModule
@@ -249,14 +249,12 @@ class NtfyCallbackUnitTest(unittest.TestCase):
         self.assertIn("has started training", request.data.decode("utf-8"))
 
     def test_missing_topic(self, mock_urlopen):
-        with patch.dict(os.environ, {"NTFY_TOPIC": ""}):
-            with self.assertRaises(ValueError):
-                NtfyCallback(self.name)
+        with patch.dict(os.environ, {"NTFY_TOPIC": ""}), self.assertRaises(ValueError):
+            NtfyCallback(self.name)
 
     def test_invalid_priority(self, mock_urlopen):
-        with patch.dict(os.environ, {"NTFY_PRIORITY": "6"}):
-            with self.assertRaises(ValueError):
-                NtfyCallback(self.name)
+        with patch.dict(os.environ, {"NTFY_PRIORITY": "6"}), self.assertRaises(ValueError):
+            NtfyCallback(self.name)
 
     def test_no_token(self, mock_urlopen):
         with patch.dict(os.environ, {"NTFY_TOKEN": ""}):

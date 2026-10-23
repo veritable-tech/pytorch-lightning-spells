@@ -3,8 +3,8 @@ import numbers
 from enum import Enum
 from pprint import pprint
 from datetime import date, datetime
-from typing import Any, Optional, MutableMapping
-from collections.abc import MutableMapping as _ABCMutableMapping
+from typing import Any
+from collections.abc import MutableMapping
 from typing_extensions import override
 
 from pytorch_lightning.loggers import Logger
@@ -22,49 +22,49 @@ def _sanitize_value(x):
     if isinstance(x, (bytes, bytearray, memoryview)):
         try:
             return bytes(x).decode("utf-8", errors="replace")
-        except Exception:
+        except Exception:  # noqa: BLE001
             return str(x)
     # Handle numpy/torch scalars
-    if hasattr(x, "item") and callable(getattr(x, "item")):
+    if hasattr(x, "item") and callable(x.item):
         try:
             scalar = x.item()
             if isinstance(scalar, (bool, int, float, str)):
                 return scalar
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
     # Handle numpy arrays / torch tensors via tolist
-    if hasattr(x, "tolist") and callable(getattr(x, "tolist")):
+    if hasattr(x, "tolist") and callable(x.tolist):
         try:
             return x.tolist()
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
     # Generic numeric conversions (e.g., numpy numeric types)
     if isinstance(x, numbers.Integral):
         try:
             return int(x)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
     if isinstance(x, numbers.Real):
         try:
             return float(x)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
     # Sequences
     if isinstance(x, (list, tuple, set)):
         return [_sanitize_value(v) for v in list(x)]
     # Mappings
-    if isinstance(x, _ABCMutableMapping):
+    if isinstance(x, MutableMapping):
         return {str(k): _sanitize_value(v) for k, v in x.items()}
-    if hasattr(x, "items") and callable(getattr(x, "items")):
+    if hasattr(x, "items") and callable(x.items):
         try:
             return {str(k): _sanitize_value(v) for k, v in x.items()}  # type: ignore
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
     # Last resort: keep if JSON can handle it, else stringify
     try:
         json.dumps(x)
         return x
-    except Exception:
+    except Exception:  # noqa: BLE001
         return str(x)
 
 
@@ -83,16 +83,16 @@ class ScreenLogger(Logger):
         super().__init__()
 
     @override
-    def log_metrics(self, metrics: dict[str, float], step: Optional[int] = None) -> None:
-        if any((key.startswith("val_") for key in metrics.keys())):
+    def log_metrics(self, metrics: dict[str, float], step: int | None = None) -> None:
+        if any(key.startswith("val_") for key in metrics):
             print("\n\n")
         for key, val in metrics.items():
             if key.startswith("val_"):
-                print(key, "%.4f" % val)
+                print(key, f"{val:.4f}")
 
     @override
     def log_hyperparams(self, params):
-        if isinstance(params, _ABCMutableMapping):
+        if isinstance(params, MutableMapping):
             pprint(sanitize_dict_like_object(params))
         else:
             pprint(params)
@@ -109,7 +109,7 @@ class ScreenLogger(Logger):
 
     @property
     @override
-    def save_dir(self) -> Optional[str]:
+    def save_dir(self) -> str | None:
         """Return the root directory where experiment logs get saved, or `None` if the logger does not save data
         locally."""
         return None
