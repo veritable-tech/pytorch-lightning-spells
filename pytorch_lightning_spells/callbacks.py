@@ -6,7 +6,7 @@ import urllib.request
 import asyncio
 import logging
 from datetime import datetime
-from typing import Tuple, Optional, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import torch
@@ -70,7 +70,7 @@ class SnapMixCallback(Callback):
         model,
         image_size,
         half: bool = False,
-        minmax: Optional[Tuple[float, float]] = None,
+        minmax: tuple[float, float] | None = None,
         cutmix_bbox: bool = False,  # cutmix style randbox
         alpha: float = 0.4,
         softmax_target: bool = True,
@@ -141,7 +141,7 @@ class CutMixCallback(Callback):
     Reference: `rwightman/pytorch-image-models/ <https://github.com/rwightman/pytorch-image-models/blob/8c9814e3f500e8b37aae86dd4db10aba2c295bd2/timm/data/mixup.py>`_
     """
 
-    def __init__(self, alpha: float = 0.4, softmax_target: bool = False, minmax: Optional[Tuple[float, float]] = None):
+    def __init__(self, alpha: float = 0.4, softmax_target: bool = False, minmax: tuple[float, float] | None = None):
         super().__init__()
         self.alpha = alpha
         self.softmax_target = softmax_target
@@ -234,7 +234,7 @@ class TelegramCallback(Callback):
         self.report_evals = report_evals
         self.chat_id = chat_id
         self.name = name
-        self.start_time = datetime.now()
+        self.start_time = datetime.now().astimezone()
 
     def send_message(self, text):
         try:
@@ -248,24 +248,24 @@ class TelegramCallback(Callback):
             pass
 
     def on_train_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
-        self.start_time = datetime.now()
+        self.start_time = datetime.now().astimezone()
         contents = [
             f"{self.name} has started training 🎬",
-            "Machine name: %s" % self.host_name,
-            "Starting date: %s" % self.start_time.strftime(TelegramCallback.DATE_FORMAT),
+            f"Machine name: {self.host_name}",
+            f"Starting date: {self.start_time.strftime(TelegramCallback.DATE_FORMAT)}",
         ]
         text = "\n".join(contents)
         self.send_message(text=text)
 
     def on_train_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
-        end_time = datetime.now()
+        end_time = datetime.now().astimezone()
         elapsed_time = end_time - self.start_time
         contents = [
             f"{self.name} has finished training 🎉",
-            "Machine name: %s" % self.host_name,
-            "Starting date: %s" % self.start_time.strftime(TelegramCallback.DATE_FORMAT),
-            "End date: %s" % end_time.strftime(TelegramCallback.DATE_FORMAT),
-            "Training duration: %s" % str(elapsed_time),
+            f"Machine name: {self.host_name}",
+            f"Starting date: {self.start_time.strftime(TelegramCallback.DATE_FORMAT)}",
+            f"End date: {end_time.strftime(TelegramCallback.DATE_FORMAT)}",
+            f"Training duration: {elapsed_time!s}",
         ]
         text = "\n".join(contents)
         self.send_message(text=text)
@@ -341,7 +341,7 @@ class NtfyCallback(Callback):
         self.host_name = socket.gethostname()
         self.report_evals = report_evals
         self.name = name
-        self.start_time = datetime.now()
+        self.start_time = datetime.now().astimezone()
 
     def send_message(self, text: str, title: str, tags: str):
         # Header values must be ASCII, so user-provided names go in the body only.
@@ -370,25 +370,25 @@ class NtfyCallback(Callback):
             LOGGER.warning("ntfy notification failed: %s", self._redact(str(error)))
 
     def on_train_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
-        self.start_time = datetime.now()
+        self.start_time = datetime.now().astimezone()
         contents = [
             f"**{self._markdown_text(self.name)}** has started training 🎬",
             "",
-            "- Machine name: %s" % self._markdown_text(self.host_name),
-            "- Starting date: %s" % self.start_time.strftime(self.DATE_FORMAT),
+            f"- Machine name: {self._markdown_text(self.host_name)}",
+            f"- Starting date: {self.start_time.strftime(self.DATE_FORMAT)}",
         ]
         self.send_message("\n".join(contents), title="Training started", tags="clapper")
 
     def on_train_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
-        end_time = datetime.now()
+        end_time = datetime.now().astimezone()
         elapsed_time = end_time - self.start_time
         contents = [
             f"**{self._markdown_text(self.name)}** has finished training 🎉",
             "",
-            "- Machine name: %s" % self._markdown_text(self.host_name),
-            "- Starting date: %s" % self.start_time.strftime(self.DATE_FORMAT),
-            "- End date: %s" % end_time.strftime(self.DATE_FORMAT),
-            "- Training duration: %s" % str(elapsed_time),
+            f"- Machine name: {self._markdown_text(self.host_name)}",
+            f"- Starting date: {self.start_time.strftime(self.DATE_FORMAT)}",
+            f"- End date: {end_time.strftime(self.DATE_FORMAT)}",
+            f"- Training duration: {elapsed_time!s}",
         ]
         self.send_message("\n".join(contents), title="Training finished", tags="tada")
 
@@ -396,8 +396,10 @@ class NtfyCallback(Callback):
         if self.report_evals is False or trainer.sanity_checking:
             return
         contents = [
-            f"Metrics from **{self._markdown_text(self.name)}** at step {trainer.global_step} "
-            f"(epoch {trainer.current_epoch}):",
+            (
+                f"Metrics from **{self._markdown_text(self.name)}** at step {trainer.global_step} "
+                f"(epoch {trainer.current_epoch}):"
+            ),
             "",
         ]
         contents += [

@@ -1,13 +1,13 @@
 import math
 import warnings
-from typing import List, Union, Iterable, Optional, Sequence
+from collections.abc import Iterable, Sequence
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 from torch.nn.parameter import Parameter
 
-Layer = Union[torch.nn.Module, torch.nn.ModuleList, list[torch.nn.Module]]
+Layer = torch.nn.Module | torch.nn.ModuleList | list[torch.nn.Module]
 
 
 class EMATracker:
@@ -33,9 +33,9 @@ class EMATracker:
     def __init__(self, alpha: float = 0.05):
         super().__init__()
         self.alpha = alpha
-        self._value: Optional[Union[float, torch.Tensor]] = None
+        self._value: float | torch.Tensor | None = None
 
-    def update(self, new_value: Union[float, torch.Tensor]):
+    def update(self, new_value: float | torch.Tensor):
         """Adds a new value to the tracker.
 
         It will ignore NaNs and raise a warning in those cases.
@@ -62,7 +62,7 @@ class EMATracker:
         return self._value
 
 
-def count_parameters(parameters: Iterable[Union[torch.Tensor, Parameter]]):
+def count_parameters(parameters: Iterable[torch.Tensor | Parameter]):
     """Count the number of parameters
 
     Args:
@@ -78,7 +78,7 @@ def count_parameters(parameters: Iterable[Union[torch.Tensor, Parameter]]):
         >>> count_parameters([torch.rand(100, 2), torch.rand(10, 3)])
         230
     """
-    return int(np.sum(list(p.numel() for p in parameters)))
+    return int(np.sum([p.numel() for p in parameters]))
 
 
 # -----------------------------------
@@ -171,7 +171,7 @@ def freeze_layers(layer_groups: Sequence[Layer], freeze_flags: Sequence[bool]):
 
 
 def separate_parameters(
-    module: Union[Parameter, nn.Module, List[nn.Module]],
+    module: Parameter | nn.Module | list[nn.Module],
     skip_list: Sequence[str] = ("bias",),
 ):
     """Separate BatchNorm2d, GroupNorm, and LayerNorm paremeters from others
