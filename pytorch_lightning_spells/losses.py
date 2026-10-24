@@ -1,7 +1,7 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 from torch import Tensor
 
@@ -14,7 +14,7 @@ class Poly1CrossEntropyLoss(nn.Module):
     Reference: `PolyLoss: A Polynomial Expansion Perspective of Classification Loss Functions <http://arxiv.org/abs/2204.12511>`_.
     """
 
-    def __init__(self, epsilon: float = 1.0, reduction: str = "none", weight: Optional[Tensor] = None):
+    def __init__(self, epsilon: float = 1.0, reduction: str = "none", weight: Tensor | None = None):
         """
         Create instance of Poly1CrossEntropyLoss
         :param num_classes:
@@ -22,7 +22,7 @@ class Poly1CrossEntropyLoss(nn.Module):
         :param reduction: one of none|sum|mean, apply reduction to final loss tensor
         :param weight: manual rescaling weight for each class, passed to Cross-Entropy loss
         """
-        super(Poly1CrossEntropyLoss, self).__init__()
+        super().__init__()
         self.epsilon = epsilon
         self.reduction = reduction
         self.weight = weight
@@ -76,7 +76,7 @@ class Poly1FocalLoss(nn.Module):
         :param weight: manual rescaling weight for each class, passed to binary Cross-Entropy loss
         :param label_is_onehot: set to True if labels are one-hot encoded
         """
-        super(Poly1FocalLoss, self).__init__()
+        super().__init__()
         self.num_classes = num_classes
         self.epsilon = epsilon
         self.alpha = alpha
@@ -84,7 +84,6 @@ class Poly1FocalLoss(nn.Module):
         self.reduction = reduction
         self.weight = weight
         self.label_is_onehot = label_is_onehot
-        return
 
     def forward(self, logits, labels):
         """
@@ -181,7 +180,7 @@ class MixupSoftmaxLoss(nn.Module):
 
     def __init__(
         self,
-        class_weights: Optional[torch.Tensor] = None,
+        class_weights: torch.Tensor | None = None,
         reduction: str = "mean",
         label_smooth_eps: float = 0,
         poly1_eps: float = 0,

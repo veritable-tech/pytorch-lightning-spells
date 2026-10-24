@@ -155,10 +155,8 @@ class FBeta(GlobalMetric):
         self.step = step
         self.beta = beta
         rank_zero_warn(
-            (
-                "This is a specialized metric that coalesces all classes except the first into the positive class and automatically optimizes the classification threshold. "
-                "Please use FBeta from torchmetrics for general use cases."
-            )
+            "This is a specialized metric that coalesces all classes except the first into the positive class and automatically optimizes the classification threshold. "
+            "Please use FBeta from torchmetrics for general use cases."
         )
 
     def find_best_fbeta_threshold(self, truth, probs):
@@ -187,5 +185,5 @@ class FBeta(GlobalMetric):
             targets_np = (targets_np != 0).astype(int)
         if len(np.unique(targets_np)) == 1:
             return torch.tensor(0, device=preds_list[0].device)
-        best_fbeta, best_thres = self.find_best_fbeta_threshold(targets_np, preds_np)
+        best_fbeta, _best_thres = self.find_best_fbeta_threshold(targets_np, preds_np)
         return torch.tensor(best_fbeta, device=preds_list[0].device)
